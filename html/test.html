@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Test password</title>
+    <!-- 引入Element UI样式 -->
+    <link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/element-ui@2.15.6/lib/theme-chalk/index.css">
+</head>
+
+<body>
+    <div id="app">
+        <el-form ref="loginForm" :model="loginForm" label-width="80px" @submit.native.prevent="handleSubmit">
+            <el-form-item label="用户名">
+              <el-input v-model="username" placeholder="请输入用户名"></el-input>
+            </el-form-item>
+            <el-form-item label="密码">
+              <el-input type="password" v-model="password" placeholder="请输入密码"></el-input>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" native-type="submit">提交</el-button>
+            </el-form-item>
+        </el-form>
+    </div>
+
+  <!-- 引入Vue和Element UI脚本 -->
+  <!-- 引入Vue和Element UI脚本 -->
+  <script src="https://fastly.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+  <script src="https://fastly.jsdelivr.net/npm/element-ui@2.15.6/lib/index.js"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script>
+    
+  new Vue({
+    el: '#app',
+    data: {
+        host:'localhost',
+        username:'',
+        password:'',
+        isloading: false
+    },
+    methods: {                
+        handleSubmit() {
+            const userKey = sessionStorage.getItem('userKey');
+            this.isLoading = true; // 开始加载数据
+            let loadingMessage = this.$message({ // 显示提示信息
+                message: '正在提交，请稍等...',
+                type: 'info',
+                duration: 0, // 设置为0则不会自动关闭
+                showClose: true // 显示关闭按钮
+            });
+            fetch('http://' + this.host + ':5111/test', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json; charset=utf-8'
+                },
+                body: JSON.stringify({ 
+                    username: this.username, 
+                    password:this.password,
+                    userKey: userKey})
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            this.$message({
+                                message: '请先登录',
+                                type: 'error',
+                                duration: 3000
+                            });
+                            window.location.href = 'login.html';
+                        } else {
+                            throw new Error('Network response was not ok');
+                        }
+                    }
+                    return response.json();
+                })
+                .then(data => {    
+                    //sessionStorage.setItem('userKey', data.key);
+                    console.log(data.content);
+                    this.username = data.content;
+                    // 跳转到copilot.html页面
+                    //window.location.href = 'req.html';   
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                })
+                .finally(() => {
+                    this.isLoading = false; // 加载完成
+                    //setTimeout(() => {
+                    this.$message.closeAll();
+                    //}, 3000);                                                                                   
+                });
+                        
+            },
+            }
+        });
+  </script>
+</body>
+</html>
