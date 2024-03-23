@@ -32,7 +32,7 @@
   new Vue({
     el: '#app',
     data: {
-        host:'localhost',
+        host:'10.101.9.50',
         username:'',
         password:'',
         isloading: false
@@ -60,12 +60,9 @@
                 .then(response => {
                     if (!response.ok) {
                         if (response.status === 401) {
-                            this.$message({
-                                message: '请先登录',
-                                type: 'error',
-                                duration: 3000
-                            });
-                            window.location.href = 'login.html';
+                            if (confirm('请先登录，点击确定跳转到登录页面。')) {
+                                window.location.href = 'login.html';
+                            }    
                         } else {
                             throw new Error('Network response was not ok');
                         }

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>编码助手</title>
+  <link rel="icon" type="image/png" href="icon.png">
+  <!-- 引入Element UI的CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.6/lib/theme-chalk/index.css">
+  
+  <!-- Prism.js CSS 
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css" rel="stylesheet" />
+  <!-- Prism.js JS 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
+  <!-- Prism.js 语言支持 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-core.min.js" data-manual></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/plugins/autoloader/prism-autoloader.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-javascript.js"></script> -->
+  <!-- 引入 Prism.js 核心文件 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism.css">
+    <script src="https://cdn.jsdelivr.net/npm/prismjs"></script>
+
+    <!-- 引入其他语言支持，这里以 JavaScript 为例 -->
+    <script src="https://cdn.jsdelivr.net/npm/prismjs/components/prism-javascript.js"></script>
+</head>
+<body>
+
+<div id="app">
+  <!-- 你的Vue组件将在这里渲染 -->
+  <div style="text-align: left;">
+    <img src="images/icon.webp" alt="Your Image" style="display: inline-block; vertical-align: middle;">
+    <h1 style="display: inline-block; vertical-align: middle; margin-left: 10px;">NSTC Copilot</h1>
+  </div>
+  <!-- 其他内容 -->
+</body>
+  <el-row :gutter="20">
+    <el-col :span="12">
+      <el-select v-model="selectedTask" placeholder="任务选择" class="my-border">
+        <el-option
+          v-for="task in tasks"
+          :key="task.value"
+          :label="task.label"
+          :value="task.value"                    
+          >
+        </el-option>
+      </el-select>
+    </el-col>
+    <el-col :span="12">
+      <el-select v-model="selectedModel" placeholder="模型选择" class="my-border">
+        <el-option
+          v-for="model in models"
+          :key="model.value"
+          :label="model.label"
+          :value="model.value"          
+          >
+        </el-option>
+      </el-select>
+      <el-select v-model="selectedAssistant" placeholder="Jump" @change="handleAssistantChange">
+        <el-option label="知识库助手" value="kb"></el-option>
+        <el-option label="代码库助手" value="helper"></el-option>
+        <el-option label="需求助手" value="req"></el-option>
+    </el-select>
+    </el-col>
+  </el-row>
+  <el-row :gutter="20">
+    <el-col :span="24">
+        <div class="grid-content bg-white"></div>
+    </el-col>
+  </el-row>
+  <el-row :gutter="20">
+    <el-col :span="12">
+      <el-input v-model="codeDescription" placeholder="对代码的描述" class="my-border"></el-input>
+    </el-col>
+    <el-col :span="12">
+      <el-select v-model="communicationHistory" placeholder="大模型沟通历史" style="width: 100%" class="my-border">
+        <el-option
+          v-for="history in communicationHistories"
+          :key="history.title"
+          :label="history.title"
+          :value="history.title"
+        >
+        </el-option>
+      </el-select>
+    </el-col>
+  </el-row>
+  <el-row :gutter="20">
+    <el-col :span="24">
+        <div class="grid-content bg-white"></div>
+    </el-col>
+  </el-row>
+  <el-row :gutter="20">
+    <el-col :span="12">
+      <el-input
+        type="textarea"
+        :rows="25"
+        placeholder="源码输入"
+        v-model="sourceCode" ></el-input>
+        <!-- @input="highlightCode"> 
+      </el-input> -->
+    </el-col>    
+    <el-col :span="12">
+      <el-input
+        type="textarea"
+        :rows="25"
+        placeholder="代码评价"
+        v-model="codeReview"
+        :scrollbar="{ wrapStyle: 'overflow: hidden;', viewStyle: 'padding: 20px 40px;' }">
+      </el-input>
+      <pre v-html="highlightedCode"></pre>
+    </el-col>
+  </el-row>
+  <el-row :gutter="20">
+    <el-col :span="24">
+        <div class="grid-content bg-white"></div>
+    </el-col>
+  </el-row>
+  <el-row :gutter="20">
+    <el-col :span="8">
+      <el-button @click="clearSourceCode" type="info">清空源码输入框</el-button>
+    </el-col>
+    <el-col :span="8">
+      <el-button @click="submitCode" type='primary'>提交给大模型</el-button>
+    </el-col>
+    <el-col :span="8">
+      <el-button @click="copyCodeReview" type="success">复制大模型反馈</el-button>
+    </el-col>
+  </el-row>
+</div>
+
+<!-- 引入Vue.js -->
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/element-ui@2.15.6/lib/index.js"></script>
+<!-- <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script> -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
+<style>
+    .grid-content {
+      border-radius: 4px;
+      min-height: 12px;
+    }
+    .my-border {
+      border-radius: 4px;
+      border: 1px solid #2730b0; /* 添加边框样式 */
+    }
+    .bg-purple {
+      background: #9c27b0;
+    }
+    .bg-white {
+        background: #f2f2f2;
+    }
+    .bg-purple-light {
+      background: #e1bee7;
+    }
+    el-input[type="textarea"] {
+      font-family: 'Courier New', monospace;
+    }
+    body {
+      background-color: #f2f2f2; /* 设置背景颜色为浅灰色 */
+    }
+    h1 {
+      display: inline-block;
+      vertical-align: middle;
+    }
+    img {
+      height: 3em; /* 使用标题的高度作为图片的高度 */
+      width: auto; /* 根据高度等比缩放宽度 */
+      margin-right: 10px; /* 设置图片和标题之间的间距 */
+    }
+    </style>
+<script>
+new Vue({
+  el: '#app',
+  data() {
+    return {
+      tasks: [
+        { value: 'evaluate', label: '评价代码' },
+        { value: 'findProblem', label: '在代码中找问题' },
+        { value: 'refactorSuggestion', label: '代码重构建议' }
+      ],
+      models: [
+        { value: 'starFire', label: '讯飞星火3.5' },
+        { value: 'deepSeek', label: 'DeepSeekCoder' },
+        { value: 'gpt35', label: 'GPT 3.5 via Azure' },
+        { value: 'ernie', label: '文心一言4.0'}
+      ],
+      selectedTask: 'evaluate',
+      selectedModel: 'starFire',
+      sourceCode: '',
+      codeSaved: '',
+      highlightedCode: '',
+      codeReview: '',
+      host: '10.101.9.50',
+      login_host: '10.101.9.50',
+      countdown: 60,
+      codeDescription: '',
+      communicationHistory: '',
+      selectedAssistant:'',
+      communicationHistories: []
+    };
+  },
+  methods: {
+    clearSourceCode() {
+      this.sourceCode = '';
+    },
+    checkLogin() {
+      const userKey = sessionStorage.getItem('userKey');
+      fetch('http://' + this.login_host + ':5111/checkLogin', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json; charset=utf-8'
+        },
+        body: JSON.stringify({ userKey: userKey })
+      })
+      .then(response => {
+        if (!response.ok) {
+          if (response.status === 401) {
+            if (confirm('请先登录，点击确定跳转到登录页面。')) {
+              window.location.href = 'login.html';
+            }    
+          } else {
+            throw new Error('Network response was not ok');
+          }
+        }
+        // 可以在这里处理登录成功的情况
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      });
+    },
+  
+    submitCode() {      
+      this.countdown = 60
+      this.codeReview = '提交代码段给大模型，等待反馈中。。。' + this.countdown + 's'
+      console.log('提交代码', this.sourceCode, this.selectedTask, this.selectedModel);
+      let timer = setInterval(() => {
+        this.countdown -= 1
+        this.codeReview = '提交代码段给大模型，等待反馈中。。。' + this.countdown + 's'// Update codeReview every second
+        // Your code to fetch and update codeReview goes here
+      }, 1000);
+
+      // After 60 seconds, clear the interval
+      setTimeout(() => {
+        clearInterval(timer);        
+        if (!this.codeReview.startsWith('来自大模型的反馈')) {
+          this.codeReview = '超时：未收到反馈';
+        }
+      }, 60000);
+
+      axios.post('http://' + this.host +':5004/ccpilot', {
+        tasks: this.selectedTask,
+        models: this.selectedModel,
+        sourceCode: this.sourceCode
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }})
+      .then(response => {
+        this.codeReview = response.data;
+        clearInterval(timer); // Stop the interval timer
+        clearTimeout(timer); // Stop the timeout timer
+        const title = this.codeDescription + ' - '
+          + this.tasks.find(task => task.value === this.selectedTask).label + ' - ' 
+          + this.models.find(model => model.value === this.selectedModel).label + ' - ' 
+          + new Date().toLocaleTimeString();
+        this.communicationHistories.push({ title, code: this.sourceCode, feedback: this.codeReview, subject: this.codeDescription});
+      })
+      .catch(error => {
+        console.error('Error submitting code:', error);
+      });
+    },    
+    copyCodeReview() {
+      const textarea = document.createElement('textarea');
+      textarea.value = this.codeReview;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    },
+    handleAssistantChange() {
+        if (this.selectedAssistant === 'kb') {
+            window.location.href = 'kb.html';
+        } else if (this.selectedAssistant === 'helper') {
+            window.location.href = 'helper.html';
+        } else if (this.selectedAssistant === 'req') {
+            window.location.href = 'req.html';
+        }
+    },
+    highlightCode() {
+      // 这里应该包含代码高亮的逻辑
+      this.codeSaved = this.sourceCode
+      this.sourceCode = Prism.highlight(this.sourceCode, Prism.languages.javascript, 'javascript');
+      //this.highlightedCode = Prism.highlight(this.sourceCode, Prism.languages.python, 'python');
+      //Prism.highlightAll()
+    }
+  },
+  watch: {
+    communicationHistory(newVal) {
+      const selectedHistory = this.communicationHistories.find(history => history.title === newVal);
+      if (selectedHistory) {
+        this.sourceCode = selectedHistory.code;
+        this.codeReview = selectedHistory.feedback;
+        this.codeDescription = selectedHistory.subject;
+      }
+    }
+  },
+  mounted() {
+    this.checkLogin(); // 页面加载完成后立即检查登录状态
+  }
+});
+</script>
+
+</body>
+</html>

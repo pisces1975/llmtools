@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>知识库助手</title>
+    <!-- 引入Element UI样式 -->
+    <!-- Tomcat: 'C:\Program Files\Apache Software Foundation\Tomcat 9.0\webapps\robot' -->
+    <link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/element-ui@2.15.6/lib/theme-chalk/index.css">
+    <!--  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism.css"> -->
+    <!-- <link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/prismjs/themes/prism.css"> -->
+</head>
+<body>   
+  <div id="app">
+    <!-- <el-label>请输入问题</el-label>-->
+    <el-input v-model="question" placeholder="请输入问题" style="width: 70%"></el-input>
+    <p></p>
+    <el-form :inline="true" :model="formInline" class="demo-form-inline">
+        <el-form-item label="答案数量">
+            <el-input-number v-model="questionCount" :min="1" :max="100" :step="1" :defaultValue="20" @change="handleChange" label="答案数量"></el-input-number>
+        </el-form-item>
+        <el-form-item label="答案类型">
+            <el-select v-model="answerType" placeholder="请选择答案类型">
+                <el-option label="仅文章" value="article"></el-option>
+                <el-option label="仅知识点" value="knowledgePoint"></el-option>
+                <el-option label="文章和知识点" value="both"></el-option>
+            </el-select>
+        </el-form-item>
+        <!-- <el-form-item label="">
+            <el-checkbox v-model="bpflag">查询BP需求</el-checkbox>
+        </el-form-item> -->        
+        <el-form-item>
+            <el-button type="primary" @click="submitQuestion">查询</el-button>
+            <el-button @click="showInstructions = true">使用说明</el-button>
+        </el-form-item>
+        <el-select v-model="selectedHistory" placeholder="请选择历史问题" @change="showHistoryData">
+            <el-option v-for="(item, index) in historyData" :key="index" :label="item.question" :value="index"></el-option>
+        </el-select>
+        <el-select v-model="selectedAssistant" placeholder="Jump" @change="handleAssistantChange">
+            <el-option label="需求助手" value="req"></el-option>
+            <el-option label="代码库助手" value="helper"></el-option>
+            <el-option label="编码助手" value="copilot"></el-option>
+        </el-select>
+        <!--<el-form-item>
+            <el-button @click="getList" type="info">模块列表</el-button>
+        </el-form-item>        -->
+
+      </el-form>
+    <!-- 使用说明弹窗 -->
+    <el-dialog title="使用说明" :visible.sync="showInstructions" width="50%">
+        <div>
+            <p>1. 使用自然语言描述问题，越详细越好。</p>
+            <p>2. 答案类型，“仅文章”，检索指定数量的知识库文章，“仅知识点”，检索指定数量的知识库知识点，“文章和知识点”，检索指定数量一半的文章，一半的知识点。</p>
+            <p>3. “序号”是链接，点击可以打开在相关TAPD项目中对应的WIKI（前提是你有访问权限）。</p>
+            <p>4. “请选择历史问题”保存本session问题和答案历史，选择下拉框中的问题会直接加载答案列表。</p>    
+            <p>5. "名称"是在相关TAPD项目WIKI中的目录结构，显示<i class="el-icon-check"></i>说明是文章，显示<i class="el-icon-info"></i>说明是知识点。</p>        
+            <p>6. 点击“内容”，可以在弹窗中看到完整的内容。</p>
+            <p>7. 2024-3-23，搜索范围覆盖履约项目经验库，G20票据FAQ，银企平台FQA第一部分。</p>
+            <!-- 
+            <p>4. 受后台逻辑限制，不一定每次都能返回“答案数量”个答案。</p>
+            <p>5. 点击“方法体”内容，可以在弹窗中看到完整的代码。</p>
+            <p>6. “注释”是通过大模型产生的，在代码源文件中没有。</p>
+            <p>7. “序号”是链接，点击可以打开在Git上保存的源码（前提是你有码云仓库权限）。</p>            
+			<p>9. 2024-3-22，搜索范围覆盖N20结算，N20核心，N20核算，金云2.0收付款 4个模块，共~15700方法，代码来自24-3-4，码云master分支。</p> -->           
+            <!-- 在这里添加更多的使用说明 -->
+        </div>
+        <span slot="footer" class="dialog-footer">
+            <p>Last update: 2024-3-23 23:45</p>
+            <el-button @click="showInstructions = false">我知道了</el-button>
+        </span>
+    </el-dialog> 
+    <el-dialog title="详细信息" :visible.sync="codeDialogVisible" :key="dialogKey" width="70%" :before-close="handleClose">
+        <div>
+            <p><strong>({{currentID}}) </strong> <strong>相似度</strong> <sup>越小越好</sup>&nbsp&nbsp{{currentDistance | toFixed8}}, <strong>名称&nbsp</strong><a :href="currentURL" target="_blank">{{ currentName }}</a> </p>                
+        </div>
+        <el-input type="textarea" v-model="currentContent" :rows="15"></el-input>
+    </el-dialog>
+    <el-table :data="tableData" style="width: 100%">
+        <el-table-column prop="ID" label="序号" width="50px">
+            <template slot-scope="scope">
+                <a :href="scope.row.URL" target="_blank">{{ scope.row.ID }}</a>
+            </template>
+        </el-table-column>        
+        <el-table-column prop="full_path" label="名称" width="250px">
+            <template slot-scope="scope">
+                <span v-if="scope.row.type === 'summary'">
+                    <i class="el-icon-check"></i> <!-- 这里使用Element UI的info图标，你可以根据需求替换为其他图标 -->
+                </span>
+                <span v-else>
+                    <i class="el-icon-info"></i> <!-- 显示success图标，你可以根据需求替换为其他图标 -->
+                </span>
+                {{ scope.row.full_path }}
+            </template>
+        </el-table-column>
+        <el-table-column prop="content" label="内容" width="700px">
+            <template slot-scope="scope">
+                <!-- <el-input type="textarea" v-model="scope.row.Comment" :rows="6" style="width: 100%; resize: both;"></el-input> -->
+                <!-- <pre class="code-container">{{ scope.row.Comment }}</pre> -->
+                <div class="textarea-container" @click="openCodeDialog(scope.row)">
+                    <el-input type="textarea" v-model="scope.row.content" :rows="5" ></el-input>
+                </div>
+            </template>
+        </el-table-column> 
+
+        
+
+        <!-- <el-table-column prop="Content" label="方法体" width="450px">
+            <template slot-scope="scope">
+                
+                <pre class="code-container" @click="openCodeDialog(scope.row.Content, scope.row)"><code class="language-java">{{ scope.row.Content }}</code></pre>
+            </template>
+        </el-table-column> -->
+        <!-- <el-table-column prop="内容" label="内容"></el-table-column> -->
+    </el-table>
+  </div>
+
+  <style>
+    .el-table__row:nth-child(odd) {
+        background-color: #fff; /* 白色 */
+    }
+    .el-table__row:nth-child(even) {
+        background-color: #f4f0ff; /* 浅蓝色 */
+    }
+</style>
+<style>
+    .code-container {
+        height: 150px; /* Adjust the height as needed */
+        overflow-y: auto; /* Adds a vertical scrollbar when content overflows */
+        background-color: #f5f5f5; /* Optional: adds a background color */
+        border: 1px solid #ccc; /* Optional: adds a border */
+        border-radius: 4px; /* Optional: rounds the corners */
+        padding: 10px; /* Optional: adds some padding inside the container */
+        font-size: 12px; /* Reduces the font size */
+    }
+</style>
+<style>
+    .textarea-container textarea {
+        max-height: 200px; /* Adjust the height as needed */
+        overflow-y: auto; /* Adds a vertical scrollbar when content overflows */
+        background-color: #f5f5f5; /* Optional: adds a background color */
+        border: 1px solid #ccc; /* Optional: adds a border */
+        border-radius: 4px; /* Optional: rounds the corners */
+        padding: 10px; /* Optional: adds some padding inside the container */
+        font-size: 14px; /* Reduces the font size */
+        width: 100%; /* Ensures the textarea takes the full width */
+        resize: both; /* Allows resizing both horizontally and vertically */
+    }
+</style>
+    <!-- 引入Vue和Element UI脚本 -->
+    <script src="https://fastly.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="https://fastly.jsdelivr.net/npm/element-ui@2.15.6/lib/index.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <!--  <script src="https://fastly.jsdelivr.net/npm/prismjs/prism.js"></script> -->
+    <script>        
+        new Vue({
+            el: '#app',
+            data: {
+                question: '',
+                questionCount: 20,  // 问题数量，默认值为10
+                tableData: [],
+                selectedOptions: '',  // 用户选择的多选选项
+                full_options: [],  // 可以从后台服务获取的选项
+                //bpflag: false,
+                //dialogVisible: false,
+                //prjtableData: [],
+                //dialogWidth: '900px',
+                //host: 'localhost', 
+                login_host:'10.101.9.50',
+                host: '10.101.9.50',
+                //selectedModule: 'N20结算',
+                historyData: [], // 存储历史问题和答案   
+                isLoading: false, 
+                codeDialogVisible: false,
+                codeDialogContent: '', 
+                currentContent:'',
+                currentName:'',
+                showInstructions: false,
+                currentPackage:'',
+                currentMethod:'',
+                currentURL:'',
+                currentID: 0,
+                currentDistance: '',
+                dialogKey: 0,
+                answerType: 'both',
+                selectedAssistant:'',
+                limit_sum: 20,
+                limit_tp: 20                 
+            },
+            methods: {                
+                submitQuestion() {
+                    if (this.question.length < 5) {
+                        this.$message({
+                            message: '问题长度太短，至少5个字符',
+                            type: 'warning'
+                        });
+                        return; // 直接返回，不继续执行后面的代码
+                    }
+                    this.isLoading = true; // 开始加载数据
+                    let loadingMessage = this.$message({ // 显示提示信息
+                        message: '正在搜索，请稍等...',
+                        type: 'info',
+                        duration: 0, // 设置为0则不会自动关闭
+                        showClose: true // 显示关闭按钮
+                    });
+                    if (this.answerType === 'article') {
+                        // 只搜索文章
+                        this.limit_sum = this.questionCount;
+                        this.limit_tp = 0;
+                    } else if (this.answerType === 'knowledgePoint') {
+                        this.limit_sum = 0;
+                        this.limit_tp = this.questionCount;
+                        // 只搜索知识点
+                    } else if (this.answerType === 'both') {
+                        // 同时搜索文章和知识点
+                        this.limit_tp = this.limit_sum = parseInt(this.questionCount/2) + 1
+                    }
+                    fetch('http://' + this.host + ':5010/query', {
+                      method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json; charset=utf-8'
+                        },
+                        body: JSON.stringify({ question: this.question, limit_sum:this.limit_sum, limit_tp:this.limit_tp})
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                                this.$message({
+                                    message: `遇到网络错误，查询失败`,
+                                    type: 'error',
+                                    duration: 3000 // This is optional, adjust the duration as needed
+                                }); 
+                            }      
+                                                 
+                            return response.json()
+                        })
+                        .then(data => {                            
+                            this.tableData = data;
+                            console.log(this.tableData)
+                            if (this.answerType === 'article') {
+                                // 只搜索文章
+                                this.selectedOptions = '文章'
+                            } else if (this.answerType === 'knowledgePoint') {
+                                this.selectedOptions = '知识点'                                
+                                // 只搜索知识点
+                            } else if (this.answerType === 'both') {
+                                // 同时搜索文章和知识点
+                                this.selectedOptions = '混合'
+                            }
+                            this.historyData.push({ question: '(' + this.selectedOptions + ') ' + this.question, data: data});
+                            loadingMessage.close();
+                            this.$message({
+                                message: `本次查询到了${this.tableData.length}条结果`,
+                                type: 'success',
+                                duration: 5000 // This is optional, adjust the duration as needed
+                            });
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                        })
+                        .finally(() => {
+                            this.isLoading = false; // 加载完成
+                            setTimeout(() => {
+                                this.$message.closeAll();
+                            }, 3000); // 关闭所有消息提示                       
+                            
+                        });
+                        
+                },
+                handleAssistantChange() {
+                    if (this.selectedAssistant === 'req') {
+                        window.location.href = 'req.html';
+                    } else if (this.selectedAssistant === 'helper') {
+                        window.location.href = 'helper.html';
+                    } else if (this.selectedAssistant === 'copilot') {
+                        window.location.href = 'copilot.html';
+                    }
+                },
+                checkLogin() {
+                    const userKey = sessionStorage.getItem('userKey');
+                    fetch('http://' + this.login_host + ':5111/checkLogin', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json; charset=utf-8'
+                        },
+                        body: JSON.stringify({ userKey: userKey })
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                        if (response.status === 401) {
+                            if (confirm('请先登录，点击确定跳转到登录页面。')) {
+                            window.location.href = 'login.html';
+                            }    
+                        } else {
+                            throw new Error('Network response was not ok');
+                        }
+                        }
+                        // 可以在这里处理登录成功的情况
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+                    },
+                decodeUnicode(str) {
+                  str = str.replace(/\\/g, "%");
+                  return decodeURIComponent(str);
+                },
+                handleChange(newValue) {
+                    // 数字输入框值改变时的处理函数
+                    console.log('问题数量改变为：', newValue);
+                },
+                showHistoryData(selectedIndex) {
+                    // 根据选中的历史问题索引，显示对应的答案
+                    this.tableData = this.historyData[selectedIndex].data;
+                },               
+                openCodeDialog(row) {
+                    this.currentContent = row.content;
+                    //this.currentPackage = row.Package;                    
+                    this.currentDistance = row.distance;                    
+                    this.currentURL = row.URL;
+                    this.currentName = row.name;
+                    this.currentID = row.ID;
+                    console.log(row)
+                    this.codeDialogVisible = true;
+                    this.dialogKey++; // 增加key的值来强制重新渲染                    
+                },
+                handleClose(done) {
+                    this.codeDialogVisible = false;
+                    this.currentContent = '';
+                    done();
+                },  
+            },            
+
+            mounted() {
+                this.checkLogin(); // 页面加载完成后立即检查登录状态
+            },
+            created() {
+                // 组件创建完成后立即获取选项
+                // this.fetchOptions();                
+            }
+        });
+        Vue.filter('toFixed8', function (value) {
+            if (typeof value !== 'number') {
+                return value;
+            }
+            return value.toFixed(8);
+            });
+    </script>
+</body>
+</html>

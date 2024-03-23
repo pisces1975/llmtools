@@ -5,6 +5,7 @@ from flask_cors import CORS
 import sys
 from xinference.client import Client
 import mysql.connector
+import json
 
 #app = Flask(__name__)
 mylogger = logger.Logger(name='llmtool', debug=True).logger  
@@ -127,7 +128,11 @@ def get_float_list():
     return jsonify(float_list)
 
 if __name__ == '__main__':
-    host = 'localhost'
+    # host = 'localhost'
+    with open('config.json', 'r') as config_file:
+        config = json.load(config_file)
+
+    host = config['host']
     app.run(debug=False, host=host, port=5111)
 
 # 在实际应用中，还需实现logout等接口，清除对应session_key的数据，并且考虑session过期等问题

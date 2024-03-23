@@ -8,14 +8,26 @@
 </head>
 
 <body>
-    <div id="app" style="display: flex; align-items: center;">
-        <div style="flex: 1;">
+    <div id="blank">
+        <h1>欢迎使用九恒星大模型工具集</h1>
+    </div>
+    <div id="app" style="display: flex; align-items: center;" class="form-container">
+        <div style="flex: 1;" >
             <el-form ref="loginForm" :model="loginForm" label-width="80px" @submit.native.prevent="handleLogin">
                 <el-form-item label="用户名">
                     <el-input v-model="username" placeholder="用户名" style="width: 250px;"></el-input>
                 </el-form-item>
                 <el-form-item label="密码">
                     <el-input type="password" v-model="password" placeholder="密码" style="width: 250px;"></el-input>
+                </el-form-item>
+                <el-form-item label="功能">
+                    <el-radio-group v-model="searchType">
+                        <el-radio label="knowledge" title="用自然语言搜索知识库，包括履约项目经验库、G20票据FAQ和银企平台FAQ第一部分">知识库助手</el-radio>
+                        <el-radio label="business" title="用自然语言搜索TAPD项目需求，包括所有司库、G20、N20和银企平台项目">需求助手</el-radio>                        
+                        <el-radio label="code" title="用自然语言搜索代码库，包括N20 结算、核算、核心，金云2.0 收付款">代码库助手</el-radio>
+                        <el-radio label="coding" title="让大模型为代码段找问题、进行评价、提重构建议，支持GPT3.5、DeepSeek、文心一言4.0、讯飞星火3.5">编码助手</el-radio>
+                        <!-- <el-radio label="default">测试页面</el-radio> -->
+                    </el-radio-group>
                 </el-form-item>
                 <el-form-item>
                     <el-button type="primary" native-type="submit">登录</el-button>
@@ -24,10 +36,48 @@
             </el-form>
         </div>
         <div style="flex: 1;">
-            <img src="images/banner.png" alt="Image" style="max-width: 100%; max-height: 100vh;">
+            <img src="images/banner.png" alt="Image" >
         </div>
     </div>
-
+    <style>
+        #app {
+            display: flex;
+            justify-content: center; /* 水平居中 */
+            align-items: center; /* 垂直居中 */
+            height: 60vh; /* 设置高度为视口高度，使内容垂直居中 */
+        }
+        #blank {
+            display: flex;
+            justify-content: center; /* 水平居中 */
+            align-items: center; /* 垂直居中 */
+            height: 20vh; /* 设置高度为视口高度，使内容垂直居中 */
+        }
+        #blank h1 {
+            color: navy; /* 设置颜色为海军蓝 */
+            text-align: left; /* 文字左对齐 */
+        }
+    </style>
+    <style>
+        .form-container {
+            border: 1px solid #ccc; /* 添加浅色边框 */
+            padding: 20px; /* 添加内边距 */
+            border-radius: 5px; /* 添加圆角 */
+            /* background-image: url('images/background.jfif'); /* 设置背景图片 
+            background-size: cover; /* 背景图片铺满容器 
+            background-repeat: no-repeat; /* 背景图片不重复 
+            background-position: center; /* 背景图片居中 */
+            background-color: #f2f2f2; /* 设置背景颜色为浅灰色 */
+            opacity: 1; /* 设置透明度 */
+            color: rgb(4, 44, 88); /* 设置字体颜色为明黄色 */
+            /* text-align: right; /* 设置所有文本右对齐 */
+        }
+        .form-container img {
+            margin-left: auto; /* 图片靠近边框右边 */
+            max-width: 90%;
+            max-height: 60vh;
+            opacity: 0.8;
+        }
+    </style>
   <!-- 引入Vue和Element UI脚本 -->
   <!-- 引入Vue和Element UI脚本 -->
   <script src="https://fastly.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
@@ -38,11 +88,13 @@
   new Vue({
             el: '#app',
             data: {
-                host:'localhost',
+                //host:'localhost',
+                host:'10.101.9.50',
                 username:'',
                 password:'',
                 isloading: false,
                 errorMessage: null,
+                searchType:'knowledge'
             },
             methods: {
                 
@@ -77,7 +129,27 @@
                             sessionStorage.setItem('userKey', data.key);
                             console.log(data.key)
                             // 跳转到copilot.html页面
-                            window.location.href = 'test.html';   
+                            //window.location.href = 'test.html';   
+                            // 根据选择的searchType跳转到不同页面
+                            switch (this.searchType) {
+                                case 'knowledge':
+                                    window.location.href = 'kb.html';
+                                    break;
+                                case 'business':
+                                    window.location.href = 'req.html';
+                                    break;
+                                case 'corporate':
+                                    window.location.href = 'corporate.html';
+                                    break;
+                                case 'code':
+                                    window.location.href = 'helper.html';
+                                    break;
+                                case 'coding':
+                                    window.location.href = 'copilot.html';
+                                    break;
+                                default:
+                                    window.location.href = 'test.html';
+                            }
                         })
                         .catch(error => {
                             console.error('Error:', error);

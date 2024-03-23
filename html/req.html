@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>需求助手</title>
+    <!-- 引入Element UI样式 -->
+    <!-- Tomcat: 'C:\Program Files\Apache Software Foundation\Tomcat 9.0\webapps\robot' -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.6/lib/theme-chalk/index.css">
+</head>
+<body>   
+  <div id="app">
+    <!-- <el-label>请输入问题</el-label>-->
+    <el-input v-model="question" placeholder="请输入问题" style="width: 70%"></el-input>
+    <p></p>
+    <el-form :inline="true" :model="formInline" class="demo-form-inline">
+        <el-form-item label="答案数量">
+            <el-input-number v-model="questionCount" :min="1" :max="100" :step="1" :defaultValue="20" @change="handleChange" label="答案数量"></el-input-number>
+        </el-form-item>
+        <el-form-item label="">
+            <el-checkbox v-model="bpflag">查询BP需求</el-checkbox>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="submitQuestion">查询</el-button>
+        </el-form-item>
+        <el-form-item>
+            <el-button @click="getList" type="info">项目列表</el-button>
+        </el-form-item>   
+        <el-select v-model="selectedAssistant" placeholder="Jump" @change="handleAssistantChange">
+            <el-option label="知识库助手" value="kb"></el-option>
+            <el-option label="代码库助手" value="helper"></el-option>
+            <el-option label="编码助手" value="copilot"></el-option>
+        </el-select>     
+      </el-form>
+    
+      <el-dialog title="项目列表" :visible.sync="dialogVisible" :width="dialogWidth">
+        <el-table :data="prjtableData">
+          <!-- <el-table-column prop="date" label="日期"></el-table-column>
+          <el-table-column prop="name" label="姓名"></el-table-column>
+          <el-table-column prop="address" label="地址"></el-table-column> -->
+          <el-table-column prop="序号" label="序号" width="60">
+            <template slot-scope="scope">
+                <a :href="scope.row.URL" target="_blank">{{ scope.row.序号 }}</a>
+            </template>
+            </el-table-column>
+            <el-table-column prop="ID" label="ID" width="100"></el-table-column>
+            <el-table-column prop="名称" label="名称" width="150"></el-table-column>
+            <el-table-column prop="系统" label="系统" width="200"></el-table-column>
+            <el-table-column prop="更新时间" label="更新时间" width="150"></el-table-column>
+            <el-table-column prop="管理员" label="管理员"></el-table-column>
+        </el-table>
+      </el-dialog>
+
+    <el-table :data="tableData" style="width: 95%">
+        <el-table-column prop="序号" label="序号" width="50">
+            <template slot-scope="scope">
+                <a :href="scope.row.URL" target="_blank">{{ scope.row.序号 }}</a>
+            </template>
+        </el-table-column>
+        <el-table-column prop="项目" label="项目" width="150"></el-table-column>
+        <el-table-column prop="需求顾问" label="需求顾问" width="100"></el-table-column>
+        <el-table-column prop="标题" label="标题" width="300"></el-table-column>
+        <el-table-column prop="内容" label="内容"></el-table-column>
+    </el-table>
+  </div>
+
+    <!-- 引入Vue和Element UI脚本 -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/element-ui@2.15.6/lib/index.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script>        
+        new Vue({
+            el: '#app',
+            data: {
+                question: '',
+                questionCount: 20,  // 问题数量，默认值为10
+                tableData: [],
+                selectedOptions: [],  // 用户选择的多选选项
+                full_options: [],  // 可以从后台服务获取的选项
+                bpflag: false,
+                dialogVisible: false,
+                prjtableData: [],
+                dialogWidth: '900px',
+                host: '10.101.9.50',
+				//host:'127.0.0.1',
+                login_host: '10.101.9.50',
+                selectedAssistant:''
+            },
+            methods: {
+                getList() {
+                axios.get("http://" + this.host + ":5003/getList")
+                    .then(response => {
+                        this.prjtableData = response.data;
+                        this.dialogVisible = true;
+                    })
+                    .catch(error => {
+                        console.error("获取列表失败：", error);
+                        this.$message({ // 显示提示信息
+                            message: '获取列表失败',
+                            type: 'error',
+                            duration: 2000, // 设置为0则不会自动关闭
+                            //showClose: true // 显示关闭按钮
+                        });
+                    });
+                },
+                checkLogin() {
+                    const userKey = sessionStorage.getItem('userKey');
+                    fetch('http://' + this.login_host + ':5111/checkLogin', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json; charset=utf-8'
+                        },
+                        body: JSON.stringify({ userKey: userKey })
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                        if (response.status === 401) {
+                            if (confirm('请先登录，点击确定跳转到登录页面。')) {
+                            window.location.href = 'login.html';
+                            }    
+                        } else {
+                            throw new Error('Network response was not ok');
+                        }
+                        }
+                        // 可以在这里处理登录成功的情况
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+                    },
+                fetchOptions() {
+                // 从Flask服务器获取选项
+                    axios.get("http://" + this.host + ":5003/options")
+                        .then(response => {
+                            this.full_options = response.data;
+                            console.log(this.full_options)
+                        })
+                        .catch(error => {
+                            console.error('Error fetching options:', error);
+                        });
+                },
+                handleAssistantChange() {
+                    if (this.selectedAssistant === 'kb') {
+                        window.location.href = 'kb.html';
+                    } else if (this.selectedAssistant === 'helper') {
+                        window.location.href = 'helper.html';
+                    } else if (this.selectedAssistant === 'copilot') {
+                        window.location.href = 'copilot.html';
+                    }
+                },
+                submitQuestion() {
+                    let loadingMessage = this.$message({ // 显示提示信息
+                        message: '正在提交，请稍等...',
+                        type: 'info',
+                        duration: 0, // 设置为0则不会自动关闭
+                        showClose: true // 显示关闭按钮
+                    });
+                    fetch('http://' + this.host + ':5003/query', {
+                      method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json; charset=utf-8'
+                        },
+                        body: JSON.stringify({ question: this.question, count:this.questionCount, bp:this.bpflag})
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }                            
+                            return response.json()
+                        })
+                        .then(data => {                            
+                            this.tableData = data;
+                            console.log(this.tableData)
+                        })
+                        .catch(error => {                            
+                            this.$message({ // 显示提示信息
+                                message: '网络错误',
+                                type: 'error',
+                                duration: 2000, // 设置为0则不会自动关闭
+                                //showClose: true // 显示关闭按钮
+                            });
+                            console.error('Error:', error);
+                        })
+                        .finally(() => {
+                            //this.isLoading = false; // 加载完成
+                            setTimeout(() => {
+                                this.$message.closeAll();
+                            }, 3000);                                                                                   
+                        });
+                },
+                decodeUnicode(str) {
+                  str = str.replace(/\\/g, "%");
+                  return decodeURIComponent(str);
+                },
+                handleChange(newValue) {
+                    // 数字输入框值改变时的处理函数
+                    console.log('问题数量改变为：', newValue);
+                }                               
+            },
+            mounted() {
+                this.checkLogin(); // 页面加载完成后立即检查登录状态
+            },
+            created() {
+                // 组件创建完成后立即获取选项
+                // this.fetchOptions();                
+            }
+        });
+    </script>
+</body>
+</html>
