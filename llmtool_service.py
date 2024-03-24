@@ -67,10 +67,11 @@ def login():
         # 生成一个随机的session key
         session_key = str(uuid.uuid4())
         
-        query = "DELETE FROM user_sessions WHERE username = %s"
+        #query = "DELETE FROM user_sessions WHERE username = %s"
+        query = "UPDATE user_sessions SET valid_flag=0 WHERE username=%s"
         execute_query(query, (username,))
-        query = "INSERT INTO user_sessions (userKey, username) VALUES (%s, %s)"
-        execute_query(query, (session_key, username))
+        query = "INSERT INTO user_sessions (userKey, username, valid_flag) VALUES (%s, %s)"
+        execute_query(query, (session_key, username,1))
                 
         # 返回成功响应，包含session key
         response = jsonify({"status": "success", "key": session_key})
@@ -102,11 +103,15 @@ def check_login():
     user_key = request.json.get('userKey')
     mylogger.debug(f"checkLogin ==> {user_key}")
     clear_expired_user_keys()
-    query = 'SELECT username, last_refresh FROM user_sessions WHERE userKey = %s'
+    query = 'SELECT username, valid_flag, last_refresh FROM user_sessions WHERE userKey = %s'
     execute_query(query, (user_key,))
     res = db_cursor.fetchone()
     if res:
-        return jsonify({"status": "success", "username": res[0]}), 200
+        username, valid_flag, _ = res
+        if valid_flag == 1:
+            query = 'UPDATE user_sessions SET valid_flag=1 WHERE userKey=%s'
+            execute_query(query, (user_key,))
+            return jsonify({"status": "success", "username": res[0]}), 200
     else:
         return jsonify({"status": "fail", "message": "验证失败"}), 401           
     
@@ -116,7 +121,8 @@ def generate_float_list():
 
 def clear_expired_user_keys():    
     # 删除1小时前更新的userKey
-    query = "DELETE FROM user_sessions WHERE last_refresh < (NOW() - INTERVAL 1 HOUR)"
+    #query = "DELETE FROM user_sessions WHERE last_refresh < (NOW() - INTERVAL 1 HOUR)"
+    query = "UPDATE user_sessions SET valid_flag=0 WHERE last_refresh < (NOW() - INTERVAL 1 HOUR)"
     execute_query(query)
 
 @app.route('/genvec', methods=['POST'])
