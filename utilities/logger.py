@@ -6,7 +6,7 @@ LOG_FILE = ".log"
 ROTATION_TIME = "02:00"
 
 class Logger:
-    def __init__(self, name="x", log_dir="logs", debug=False):
+    def __init__(self, name="searchAll", log_dir="logs", debug=False):
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
         log_file_path = os.path.join(log_dir, name+LOG_FILE)
@@ -22,6 +22,7 @@ class Logger:
         self.logger = logger
 
 LOG = Logger(debug=True).logger
+logger = LOG
 #LOG_local = Logger(name='local', debug=True).logger
 
 if __name__ == "__main__":

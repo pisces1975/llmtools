@@ -87,7 +87,7 @@
             },
             methods: {
                 getList() {
-                axios.get("http://" + this.host + ":5003/getList")
+                axios.get("http://" + this.host + ":5009/getProjectList")
                     .then(response => {
                         this.prjtableData = response.data;
                         this.dialogVisible = true;
@@ -127,7 +127,7 @@
                         console.error('Error:', error);
                     });
                     },
-                fetchOptions() {
+                /* fetchOptions() {
                 // 从Flask服务器获取选项
                     axios.get("http://" + this.host + ":5003/options")
                         .then(response => {
@@ -137,7 +137,7 @@
                         .catch(error => {
                             console.error('Error fetching options:', error);
                         });
-                },
+                }, */
                 handleAssistantChange() {
                     if (this.selectedAssistant === 'kb') {
                         window.location.href = 'kb.html';
@@ -154,7 +154,7 @@
                         duration: 0, // 设置为0则不会自动关闭
                         showClose: true // 显示关闭按钮
                     });
-                    fetch('http://' + this.host + ':5003/query', {
+                    fetch('http://' + this.host + ':5009/searchReq', {
                       method: 'POST',
                         headers: {
                             'Content-Type': 'application/json; charset=utf-8'

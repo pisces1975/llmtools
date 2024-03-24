@@ -179,6 +179,7 @@
                 //dialogWidth: '900px',
                 //host: '127.0.0.1', 
                 host: '10.101.9.50',
+                login_host:'10.101.9.50',
                 selectedModule: 'N20结算',
                 historyData: [], // 存储历史问题和答案   
                 isLoading: false, 
@@ -193,28 +194,7 @@
                 selectedAssistant:'',
                 dialogKey: 0       
             },
-            methods: {
-                /* getList() {
-                axios.get("http://" + this.host + ":5003/getList")
-                    .then(response => {
-                        this.prjtableData = response.data;
-                        this.dialogVisible = true;
-                    })
-                    .catch(error => {
-                        console.error("获取列表失败：", error);
-                    });
-                }, */
-                /* fetchOptions() {
-                // 从Flask服务器获取选项
-                    axios.get("http://" + this.host + ":5003/options")
-                        .then(response => {
-                            this.full_options = response.data;
-                            console.log(this.full_options)
-                        })
-                        .catch(error => {
-                            console.error('Error fetching options:', error);
-                        });
-                }, */
+            methods: {                
                 submitQuestion() {
                     if (this.question.length < 5) {
                         this.$message({
@@ -230,7 +210,7 @@
                         duration: 0, // 设置为0则不会自动关闭
                         showClose: true // 显示关闭按钮
                     });
-                    fetch('http://' + this.host + ':5009/query', {
+                    fetch('http://' + this.host + ':5009/searchCode', {
                       method: 'POST',
                         headers: {
                             'Content-Type': 'application/json; charset=utf-8'
@@ -289,7 +269,7 @@
                 },
                 checkLogin() {
                     const userKey = sessionStorage.getItem('userKey');
-                    fetch('http://' + this.login + ':5111/checkLogin', {
+                    fetch('http://' + this.login_host + ':5111/checkLogin', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json; charset=utf-8'

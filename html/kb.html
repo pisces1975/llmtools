@@ -213,7 +213,7 @@
                         // 同时搜索文章和知识点
                         this.limit_tp = this.limit_sum = parseInt(this.questionCount/2) + 1
                     }
-                    fetch('http://' + this.host + ':5010/query', {
+                    fetch('http://' + this.host + ':5009/searchKB', {
                       method: 'POST',
                         headers: {
                             'Content-Type': 'application/json; charset=utf-8'

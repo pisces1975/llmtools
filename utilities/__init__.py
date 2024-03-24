@@ -3,6 +3,8 @@
 # from . import api2d_completion
 # from . import api2d_embedding
 from . import logger
+from . import embedding
+from . import dbtool
 #from . import strings
 #from . import accessGPT
 #from . import accessBaidu

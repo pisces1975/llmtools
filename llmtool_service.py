@@ -57,20 +57,26 @@ def create_embedding_bge(sentence):
     # LOG.debug(f"length of embedding {len(embedding)}, {embedding[:5]}")
     return embedding
 
+def checkUser(username, password):
+    if username in users_db and users_db[username]['password'] == password:
+        return True
+    else:
+        return False
+    
 @app.route('/login', methods=['POST'])
 def login():
     username = request.json.get('username')
     password = request.json.get('password')
     clear_expired_user_keys()  # 清理过期的userKey
 
-    if username in users_db and users_db[username]['password'] == password:
+    if checkUser(username, password):
         # 生成一个随机的session key
         session_key = str(uuid.uuid4())
         
         #query = "DELETE FROM user_sessions WHERE username = %s"
-        query = "UPDATE user_sessions SET valid_flag=0 WHERE username=%s"
-        execute_query(query, (username,))
-        query = "INSERT INTO user_sessions (userKey, username, valid_flag) VALUES (%s, %s)"
+        #query = "UPDATE user_sessions SET valid_flag=0 WHERE username=%s"
+        #execute_query(query, (username,))
+        query = "INSERT INTO user_sessions (userKey, username, valid_flag) VALUES (%s, %s,%s)"
         execute_query(query, (session_key, username,1))
                 
         # 返回成功响应，包含session key
@@ -103,15 +109,14 @@ def check_login():
     user_key = request.json.get('userKey')
     mylogger.debug(f"checkLogin ==> {user_key}")
     clear_expired_user_keys()
-    query = 'SELECT username, valid_flag, last_refresh FROM user_sessions WHERE userKey = %s'
+    query = 'SELECT username, valid_flag, last_refresh FROM user_sessions WHERE userKey=%s and valid_flag=1'
     execute_query(query, (user_key,))
     res = db_cursor.fetchone()
     if res:
-        username, valid_flag, _ = res
-        if valid_flag == 1:
-            query = 'UPDATE user_sessions SET valid_flag=1 WHERE userKey=%s'
-            execute_query(query, (user_key,))
-            return jsonify({"status": "success", "username": res[0]}), 200
+        username, _, _ = res        
+        query = 'UPDATE user_sessions SET valid_flag=1 WHERE userKey=%s'
+        execute_query(query, (user_key,))
+        return jsonify({"status": "success", "username": username}), 200
     else:
         return jsonify({"status": "fail", "message": "验证失败"}), 401           
     
@@ -131,6 +136,7 @@ def get_float_list():
     mylogger.debug(f'Get question: {question}')
     #float_list = generate_float_list()
     float_list = create_embedding_bge(question)
+    mylogger.debug(f'Done embedding: {len(float_list)}, {float_list[0]}, {float_list[-1]}')
     return jsonify(float_list)
 
 if __name__ == '__main__':
