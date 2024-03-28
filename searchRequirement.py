@@ -4,7 +4,7 @@
 #import os
 #os.chdir('c:/repo/Knowledgebase-Robot/')
 #from utilities import logger
-from utilities.logger import LOG
+from utilities import logger
 from utilities.embedding import create_embedding_bge
 from utilities.dbtool import DBHandler
 #from sqlalchemy import Column, Integer, String, Text, Date
@@ -23,13 +23,18 @@ from datetime import datetime
 #import requests
 import json
 
+LOG = logger.Logger(name=logger.SEARCHALL_LOG_FILE_NAME, debug=True).logger
+
 class SearchRequirement:
     def __init__(self) -> None:      
         self.story_index = faiss.read_index('vecdb/story.faiss')  
         self.bp_index = faiss.read_index('vecdb/bp_story.faiss')
         self.db = DBHandler('requirements')
+        errflg, errmsg = self.db.geterror()
+        LOG.debug(errmsg)
         LOG.debug(f"Open FAISS db with {self.story_index.ntotal}, {self.bp_index.ntotal} entires")
-
+        if not errflg:
+            raise Exception("An error occurred: " + errmsg)
 
     def lookup_vec(self, question, limit=10, bp=False):
         LOG.debug("Start to create embedding of question ...")
@@ -177,4 +182,5 @@ class SearchRequirement:
         #return jsonify(results)
         return results
 
-
+if __name__ == '__main__':
+    engine = SearchRequirement()

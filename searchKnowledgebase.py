@@ -1,7 +1,7 @@
 #from IPython.display import HTML  
 #import os
 #import mysql.connector
-from utilities.logger import LOG
+from utilities import logger
 from utilities.embedding import create_embedding_bge
 from utilities.dbtool import DBHandler
 import faiss
@@ -14,13 +14,18 @@ import sys
 #from datetime import datetime
 #import pandas as pd
 #import requests
+LOG = logger.Logger(name=logger.SEARCHALL_LOG_FILE_NAME, debug=True).logger
 
 class SearchKB:
     def __init__(self) -> None:
         self.summary_index = faiss.read_index('vecdb/bge_ms_index_summary.faiss')  
         self.textpoint_index = faiss.read_index('vecdb/bge_ms_index_textpoints.faiss')  
         self.db = DBHandler('knowledgebase')
+        errflg, errmsg = self.db.geterror()
+        LOG.debug(errmsg)
         LOG.debug(f"Open FAISS db with s-{self.summary_index.ntotal} entires, t-{self.textpoint_index.ntotal} entries")
+        if not errflg:
+            raise Exception("An error occurred: " + errmsg)
 
     def query(self, question, limit_sum, limit_tp):
         LOG.debug("Start to create embedding of question ...")
@@ -128,3 +133,5 @@ class SearchKB:
 
 #     host = config['host']
 #     app.run(debug=False, port=5010, host=host)
+if __name__ == '__main__':
+    engine = SearchKB()

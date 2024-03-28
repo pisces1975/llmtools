@@ -4,10 +4,10 @@ import sys
 
 LOG_FILE = ".log"
 ROTATION_TIME = "02:00"
-SEARCHALL_LOG_FILE_NAME = 'searchallx'
+DB_LOG_FILE_NAME = 'dblog'
 
-class Logger:
-    def __init__(self, name="x", log_dir="logs", debug=False):
+class DBLogger:
+    def __init__(self, name="db_access", log_dir="logs", debug=False):
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
         log_file_path = os.path.join(log_dir, name+LOG_FILE)
@@ -28,7 +28,7 @@ class Logger:
 #LOG_local = Logger(name='local', debug=True).logger
 
 if __name__ == "__main__":
-    log = Logger().logger
+    log = DBLogger().logger
 
     log.debug("This is a debug message.")
     log.info("This is an info message.")

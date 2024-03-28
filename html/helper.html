@@ -31,7 +31,7 @@
         </el-form-item>
         <el-form-item>
             <el-button type="primary" @click="submitQuestion">查询</el-button>
-            <el-button @click="showInstructions = true">使用说明</el-button>
+            <el-button @click="showInstructions = true" size="large"><i class="el-icon-question"></i></el-button>
         </el-form-item>
         <el-select v-model="selectedHistory" placeholder="请选择历史问题" @change="showHistoryData">
             <el-option v-for="(item, index) in historyData" :key="index" :label="item.question" :value="index"></el-option>
@@ -57,11 +57,12 @@
             <p>6. “注释”是通过大模型产生的，在代码源文件中没有。</p>
             <p>7. “序号”是链接，点击可以打开在Git上保存的源码（前提是你有码云仓库权限）。</p>
             <p>8. “请选择历史问题”保存本session问题和答案历史，选择下拉框中的问题会直接加载答案列表。</p>            
-			<p>9. 2024-3-22，搜索范围覆盖N20结算，N20核心，N20核算，金云2.0收付款 4个模块，共~15700方法，代码来自24-3-4，码云master分支。</p>            
+			<p>9. 2024-3-22，搜索范围覆盖N20结算，N20核心，N20核算，金云2.0收付款 4个模块，共~15700方法，代码来自24-3-4，码云master分支。</p> 
+            <p>10. 点击“JUMP”可以在几个助手功能之间跳转。</p>            
             <!-- 在这里添加更多的使用说明 -->
         </div>
         <span slot="footer" class="dialog-footer">
-            <p>Last update: 2024-3-23 15:32</p>
+            <p>Last update: 2024-3-28 10:00</p>
             <el-button @click="showInstructions = false">我知道了</el-button>
         </span>
     </el-dialog>
@@ -177,9 +178,12 @@
                 //dialogVisible: false,
                 //prjtableData: [],
                 //dialogWidth: '900px',
-                //host: '127.0.0.1', 
-                host: '10.101.9.50',
-                login_host:'10.101.9.50',
+                //host: '127.0.0.1',
+                //login_host: '127.0.0.1', 
+                //host: '10.101.9.50',
+                //login_host:'10.101.9.50',
+                host:'210.12.129.83',
+                login_host:'210.12.129.83',
                 selectedModule: 'N20结算',
                 historyData: [], // 存储历史问题和答案   
                 isLoading: false, 

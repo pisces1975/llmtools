@@ -6,37 +6,34 @@ import sys
 from xinference.client import Client
 import mysql.connector
 import json
+from utilities.dbtool import DBHandler
+
 
 #app = Flask(__name__)
 mylogger = logger.Logger(name='llmtool', debug=True).logger  
 app = Flask(__name__)  
 CORS(app)
 
-mysql_db_config = {
-    "host": "10.101.9.50",
-    "user": 'root',
-    "password": 'newpass',
-    "database": 'codebase'
-}
+db_handler = DBHandler('users')
+# mysql_db_config = {
+#     "host": "10.101.9.50",
+#     "user": 'root',
+#     "password": 'newpass',
+#     "database": 'codebase'
+# }
 
-db_connection = mysql.connector.connect(**mysql_db_config)
-db_cursor = db_connection.cursor()
-if db_connection.is_connected():
-    mylogger.debug("Successfully connect mysql database")
+# db_connection = mysql.connector.connect(**mysql_db_config)
+# db_cursor = db_connection.cursor()
+# if db_connection.is_connected():
+#     mylogger.debug("Successfully connect mysql database")
 
-mylogger.debug(mysql_db_config)
-def execute_query(query, params=()):
-    db_cursor.execute(query, params)
-    if query.strip().startswith("SELECT"):
-        pass
-    else:
-        db_connection.commit() 
-# 使用字典模拟用户存储，实际项目中应使用数据库
-users_db = {
-    "admin": {"password": "123456"},
-    'zz': {'password': 'zz'},
-    'xyz': {'password': 'abc'}
-}
+# mylogger.debug(mysql_db_config)
+# def execute_query(query, params=()):
+#     db_cursor.execute(query, params)
+#     if query.strip().startswith("SELECT"):
+#         pass
+#     else:
+#         db_connection.commit() 
 
 # 存储登录成功的用户session数据
 sessions = {}
@@ -58,11 +55,51 @@ def create_embedding_bge(sentence):
     return embedding
 
 def checkUser(username, password):
-    if username in users_db and users_db[username]['password'] == password:
+    query = "SELECT * FROM user_info WHERE username=%s and mypwd=%s"
+    db_handler.execute_query(query,(username, password))
+    res = db_handler.fetchone()
+    if res:
         return True
     else:
         return False
-    
+
+@app.route('/register', methods=['POST'])    
+def register():
+    username = request.json.get('username')
+    password = request.json.get('password')
+    clear_expired_user_keys()  # 清理过期的userKey
+
+    query = "SELECT * FROM user_info WHERE username=%s"
+    db_handler.execute_query(query, (username, ))
+    res = db_handler.fetchone()
+    if res:
+        mylogger.debug(f'{username} existed! Return 405 failure')
+        return jsonify({"status": "fail", "message": "用户名已经存在"}), 405
+    else:
+        query = "INSERT INTO user_info (username, mypwd) VALUES (%s, %s)"
+        db_handler.execute_query(query, (username, password))
+        mylogger.debug(f'{username} has added to user_info db')
+        return jsonify({"status": "success", "message": "注册成功"}), 200
+
+@app.route('/changepwd', methods=['POST'])
+def changePassword():
+    username = request.json.get('username')
+    password = request.json.get('password')
+    clear_expired_user_keys()  # 清理过期的userKey
+
+    query = "SELECT id, username FROM user_info WHERE username=%s"
+    db_handler.execute_query(query, (username, ))
+    res = db_handler.fetchone()
+    if res:
+        id, _ = res
+        query = "UPDATE user_info SET mypwd=%s WHERE username=%s"
+        db_handler.execute_query(query, (password, username))
+        mylogger.debug(f'{username} {password} change DONE.')
+        return jsonify({"status": "success", "message": "密码修改成功成功"}), 200
+    else:
+        mylogger.debug(f'{username} does not exist! Return 405 failure')
+        return jsonify({"status": "fail", "message": "用户名不存在"}), 405
+
 @app.route('/login', methods=['POST'])
 def login():
     username = request.json.get('username')
@@ -73,11 +110,11 @@ def login():
         # 生成一个随机的session key
         session_key = str(uuid.uuid4())
         
-        #query = "DELETE FROM user_sessions WHERE username = %s"
-        #query = "UPDATE user_sessions SET valid_flag=0 WHERE username=%s"
-        #execute_query(query, (username,))
-        query = "INSERT INTO user_sessions (userKey, username, valid_flag) VALUES (%s, %s,%s)"
-        execute_query(query, (session_key, username,1))
+        #query = "DELETE FROM user_session WHERE username = %s"
+        #query = "UPDATE user_session SET valid_flag=0 WHERE username=%s"
+        #db_handler.execute_query(query, (username,))
+        query = "INSERT INTO user_session (userKey, username, valid_flag) VALUES (%s, %s,%s)"
+        db_handler.execute_query(query, (session_key, username,1))
                 
         # 返回成功响应，包含session key
         response = jsonify({"status": "success", "key": session_key})
@@ -95,9 +132,9 @@ def test():
     userKey = request.json.get('userKey')
 
     mylogger.debug(f"test ==> {userKey}")
-    query = 'SELECT username, last_refresh FROM user_sessions WHERE userKey = %s'
-    execute_query(query, (userKey,))
-    res = db_cursor.fetchone()
+    query = 'SELECT username, last_refresh FROM user_session WHERE userKey = %s'
+    db_handler.execute_query(query, (userKey,))
+    res = db_handler.fetchone()
     if res:
         return jsonify({"status": "success", "content": f'Your username is {res[0]}'}), 200
     else:
@@ -109,13 +146,13 @@ def check_login():
     user_key = request.json.get('userKey')
     mylogger.debug(f"checkLogin ==> {user_key}")
     clear_expired_user_keys()
-    query = 'SELECT username, valid_flag, last_refresh FROM user_sessions WHERE userKey=%s and valid_flag=1'
-    execute_query(query, (user_key,))
-    res = db_cursor.fetchone()
+    query = 'SELECT username, valid_flag, last_refresh FROM user_session WHERE userKey=%s and valid_flag=1'
+    db_handler.execute_query(query, (user_key,))
+    res = db_handler.fetchone()
     if res:
         username, _, _ = res        
-        query = 'UPDATE user_sessions SET valid_flag=1 WHERE userKey=%s'
-        execute_query(query, (user_key,))
+        query = 'UPDATE user_session SET valid_flag=1 WHERE userKey=%s'
+        db_handler.execute_query(query, (user_key,))
         return jsonify({"status": "success", "username": username}), 200
     else:
         return jsonify({"status": "fail", "message": "验证失败"}), 401           
@@ -126,9 +163,9 @@ def generate_float_list():
 
 def clear_expired_user_keys():    
     # 删除1小时前更新的userKey
-    #query = "DELETE FROM user_sessions WHERE last_refresh < (NOW() - INTERVAL 1 HOUR)"
-    query = "UPDATE user_sessions SET valid_flag=0 WHERE last_refresh < (NOW() - INTERVAL 1 HOUR)"
-    execute_query(query)
+    #query = "DELETE FROM user_session WHERE last_refresh < (NOW() - INTERVAL 1 HOUR)"
+    query = "UPDATE user_session SET valid_flag=0 WHERE last_refresh < (NOW() - INTERVAL 1 HOUR)"
+    db_handler.execute_query(query)
 
 @app.route('/genvec', methods=['POST'])
 def get_float_list():

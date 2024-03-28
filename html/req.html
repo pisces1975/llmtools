@@ -25,13 +25,33 @@
         <el-form-item>
             <el-button @click="getList" type="info">项目列表</el-button>
         </el-form-item>   
+        <el-button @click="showInstructions = true" size="large"><i class="el-icon-question"></i></el-button>
         <el-select v-model="selectedAssistant" placeholder="Jump" @change="handleAssistantChange">
             <el-option label="知识库助手" value="kb"></el-option>
             <el-option label="代码库助手" value="helper"></el-option>
             <el-option label="编码助手" value="copilot"></el-option>
         </el-select>     
       </el-form>
-    
+      <el-dialog title="使用说明" :visible.sync="showInstructions" width="50%">
+        <div>
+            <p>1. 使用自然语言描述问题，越详细越好。</p>
+            <p>2. 查询银企平台的需求时，要勾选“查询BP需求”。</p>
+            <p>3. 点击“项目列表”，展示目前需求库覆盖的TAPD项目，“序号”是链接，点击可以打开在相关TAPD项目，更新时间指TAPD需求导入需求库的时间。</p>
+            <p>4. 点击“JUMP”可以在几个助手功能之间跳转。</p>             
+            <!-- 
+            <p>4. 受后台逻辑限制，不一定每次都能返回“答案数量”个答案。</p>
+            <p>5. 点击“方法体”内容，可以在弹窗中看到完整的代码。</p>
+            <p>6. “注释”是通过大模型产生的，在代码源文件中没有。</p>
+            <p>7. “序号”是链接，点击可以打开在Git上保存的源码（前提是你有码云仓库权限）。</p>            
+			<p>9. 2024-3-22，搜索范围覆盖N20结算，N20核心，N20核算，金云2.0收付款 4个模块，共~15700方法，代码来自24-3-4，码云master分支。</p> -->           
+            <!-- 在这里添加更多的使用说明 -->
+        </div>
+        <span slot="footer" class="dialog-footer">
+            <p>Last update: 2024-3-28 10:30</p>
+            <el-button @click="showInstructions = false">我知道了</el-button>
+        </span>
+    </el-dialog>
+
       <el-dialog title="项目列表" :visible.sync="dialogVisible" :width="dialogWidth">
         <el-table :data="prjtableData">
           <!-- <el-table-column prop="date" label="日期"></el-table-column>
@@ -80,9 +100,13 @@
                 dialogVisible: false,
                 prjtableData: [],
                 dialogWidth: '900px',
-                host: '10.101.9.50',
-				//host:'127.0.0.1',
-                login_host: '10.101.9.50',
+                //host: '10.101.9.50',				
+                //login_host: '10.101.9.50',
+                //host: '127.0.0.1',
+                //login_host: '127.0.0.1',
+                host:'210.12.129.83',
+                login_host:'210.12.129.83',
+                showInstructions: false,
                 selectedAssistant:''
             },
             methods: {

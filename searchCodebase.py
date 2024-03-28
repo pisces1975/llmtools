@@ -1,7 +1,7 @@
 #from IPython.display import HTML  
 #import os
 #import mysql.connector
-from utilities.logger import LOG
+from utilities import logger
 from utilities.embedding import create_embedding_bge
 from utilities.dbtool import DBHandler
 import faiss
@@ -16,6 +16,7 @@ import pandas as pd
 #import requests
 
 AMP_NUM = 3
+LOG = logger.Logger(name=logger.SEARCHALL_LOG_FILE_NAME, debug=True).logger
 
 module_name_mapping = {'N20核算':'atg-accounting',
                         "N20核心":'fcs-coresvc',
@@ -26,8 +27,12 @@ class SearchCodebase:
     def __init__(self) -> None:     
         self.method_index = faiss.read_index('vecdb/method_embedding.index')  
         self.db = DBHandler('codebase')
+        errflg, errmsg = self.db.geterror()
+        LOG.debug(errmsg)
         LOG.debug(f"Open FAISS db with {self.method_index.ntotal} entires, cover {module_name_mapping.keys()}")
-
+        if not errflg:
+            raise Exception("An error occurred: " + errmsg)
+        
     def query(self, question, limit, module):
         LOG.debug("Start to create embedding of question ...")
         query_vec = create_embedding_bge(question)
@@ -132,3 +137,5 @@ class SearchCodebase:
 #     #host = 'localhost'    
 #     host = '10.101.9.50'
 #     app.run(debug=False, port=5009, host=host)
+if __name__ == '__main__':
+    engine = SearchCodebase()

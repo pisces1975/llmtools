@@ -44,6 +44,7 @@
           >
         </el-option>
       </el-select>
+      <el-button @click="showInstructions = true" size="large"><i class="el-icon-question"></i></el-button>
     </el-col>
     <el-col :span="12">
       <el-select v-model="selectedModel" placeholder="模型选择" class="my-border">
@@ -55,6 +56,7 @@
           >
         </el-option>
       </el-select>
+      
       <el-select v-model="selectedAssistant" placeholder="Jump" @change="handleAssistantChange">
         <el-option label="知识库助手" value="kb"></el-option>
         <el-option label="代码库助手" value="helper"></el-option>
@@ -119,12 +121,26 @@
       <el-button @click="clearSourceCode" type="info">清空源码输入框</el-button>
     </el-col>
     <el-col :span="8">
-      <el-button @click="submitCode" type='primary'>提交给大模型</el-button>
+      <el-button @click="submitCode" type='primary' :disabled="disable_flag">提交给大模型</el-button>
     </el-col>
     <el-col :span="8">
       <el-button @click="copyCodeReview" type="success">复制大模型反馈</el-button>
     </el-col>
   </el-row>
+  <el-dialog title="使用说明" :visible.sync="showInstructions" width="50%">
+    <div>
+        <p>1. 可以让大模型做3件事，“评价代码”是Code Review，“在代码中找问题”是找BUG，“代码重构建议”是重构建议</p>
+        <p>2. “对代码的描述”是对代码进行简要描述，会出现在“大模型沟通历史”里，即本session都和大模型沟通了几次，每次的内容是什么</p>
+        <p>3. 目前支持3个模型，DeepSeek Coder，GPT3.5-turbo，文心一言4.0</p>
+        <p>4. 不同大模型的反馈时间不同，请耐心等待，不要重复提交，通常小于60秒</p></0>        
+        <p>4. 点击“JUMP”可以在几个助手功能之间跳转。</p>            
+        <!-- 在这里添加更多的使用说明 -->
+    </div>
+    <span slot="footer" class="dialog-footer">
+        <p>Last update: 2024-3-28 10:00</p>
+        <el-button @click="showInstructions = false">我知道了</el-button>
+    </span>
+</el-dialog>
 </div>
 
 <!-- 引入Vue.js -->
@@ -177,23 +193,29 @@ new Vue({
         { value: 'refactorSuggestion', label: '代码重构建议' }
       ],
       models: [
-        { value: 'starFire', label: '讯飞星火3.5' },
+        //{ value: 'starFire', label: '讯飞星火3.5' },
         { value: 'deepSeek', label: 'DeepSeekCoder' },
         { value: 'gpt35', label: 'GPT 3.5 via Azure' },
         { value: 'ernie', label: '文心一言4.0'}
       ],
       selectedTask: 'evaluate',
-      selectedModel: 'starFire',
+      selectedModel: 'deepSeek',
       sourceCode: '',
       codeSaved: '',
       highlightedCode: '',
       codeReview: '',
-      host: '10.101.9.50',
-      login_host: '10.101.9.50',
+      //host: '10.101.9.50',
+      //login_host: '10.101.9.50',
+      //host: '127.0.0.1',
+      //login_host: '127.0.0.1',
+      host:'210.12.129.83',
+      login_host:'210.12.129.83',
       countdown: 60,
       codeDescription: '',
       communicationHistory: '',
       selectedAssistant:'',
+      showInstructions:false,
+      disable_flag: false,
       communicationHistories: []
     };
   },
@@ -227,7 +249,8 @@ new Vue({
       });
     },
   
-    submitCode() {      
+    submitCode() {  
+      this.disable_flag = true    
       this.countdown = 60
       this.codeReview = '提交代码段给大模型，等待反馈中。。。' + this.countdown + 's'
       console.log('提交代码', this.sourceCode, this.selectedTask, this.selectedModel);
@@ -242,6 +265,7 @@ new Vue({
         clearInterval(timer);        
         if (!this.codeReview.startsWith('来自大模型的反馈')) {
           this.codeReview = '超时：未收到反馈';
+          this.disable_flag = false;
         }
       }, 60000);
 
@@ -263,9 +287,11 @@ new Vue({
           + this.models.find(model => model.value === this.selectedModel).label + ' - ' 
           + new Date().toLocaleTimeString();
         this.communicationHistories.push({ title, code: this.sourceCode, feedback: this.codeReview, subject: this.codeDescription});
+        this.disable_flag = false;
       })
       .catch(error => {
         console.error('Error submitting code:', error);
+        this.disable_flag = false;
       });
     },    
     copyCodeReview() {

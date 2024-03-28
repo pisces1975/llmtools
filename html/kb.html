@@ -30,7 +30,7 @@
         </el-form-item> -->        
         <el-form-item>
             <el-button type="primary" @click="submitQuestion">查询</el-button>
-            <el-button @click="showInstructions = true">使用说明</el-button>
+            <el-button @click="showInstructions = true" size="large"><i class="el-icon-question"></i></el-button>
         </el-form-item>
         <el-select v-model="selectedHistory" placeholder="请选择历史问题" @change="showHistoryData">
             <el-option v-for="(item, index) in historyData" :key="index" :label="item.question" :value="index"></el-option>
@@ -53,8 +53,9 @@
             <p>3. “序号”是链接，点击可以打开在相关TAPD项目中对应的WIKI（前提是你有访问权限）。</p>
             <p>4. “请选择历史问题”保存本session问题和答案历史，选择下拉框中的问题会直接加载答案列表。</p>    
             <p>5. "名称"是在相关TAPD项目WIKI中的目录结构，显示<i class="el-icon-check"></i>说明是文章，显示<i class="el-icon-info"></i>说明是知识点。</p>        
-            <p>6. 点击“内容”，可以在弹窗中看到完整的内容。</p>
+            <p>6. 点击“内容”，可以在弹窗中看到完整的内容。同时也能看到相似度，即问题和答案之间的相似程度，越小越好，通常小于0.7是比较相似的</p>            
             <p>7. 2024-3-23，搜索范围覆盖履约项目经验库，G20票据FAQ，银企平台FQA第一部分。</p>
+            <p>8. 点击“JUMP”可以在几个助手功能之间跳转。</p>  
             <!-- 
             <p>4. 受后台逻辑限制，不一定每次都能返回“答案数量”个答案。</p>
             <p>5. 点击“方法体”内容，可以在弹窗中看到完整的代码。</p>
@@ -64,7 +65,7 @@
             <!-- 在这里添加更多的使用说明 -->
         </div>
         <span slot="footer" class="dialog-footer">
-            <p>Last update: 2024-3-23 23:45</p>
+            <p>Last update: 2024-3-28 10:30</p>
             <el-button @click="showInstructions = false">我知道了</el-button>
         </span>
     </el-dialog> 
@@ -162,10 +163,13 @@
                 //bpflag: false,
                 //dialogVisible: false,
                 //prjtableData: [],
-                //dialogWidth: '900px',
-                //host: 'localhost', 
-                login_host:'10.101.9.50',
-                host: '10.101.9.50',
+                //dialogWidth: '900px',                
+                //login_host:'10.101.9.50',
+                //host: '10.101.9.50',
+                //host: '127.0.0.1',
+                //login_host: '127.0.0.1',
+                host:'210.12.129.83',
+                login_host:'210.12.129.83',
                 //selectedModule: 'N20结算',
                 historyData: [], // 存储历史问题和答案   
                 isLoading: false, 
