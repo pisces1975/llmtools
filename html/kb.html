@@ -18,6 +18,9 @@
         <el-form-item label="答案数量">
             <el-input-number v-model="questionCount" :min="1" :max="100" :step="1" :defaultValue="20" @change="handleChange" label="答案数量"></el-input-number>
         </el-form-item>
+        <el-form-item label="相关度">
+            <el-input-number v-model="similarityThreshold" :min="0.0" :max="1.5" :step="0.1" label="相关度"></el-input-number>
+        </el-form-item>
         <el-form-item label="答案类型">
             <el-select v-model="answerType" placeholder="请选择答案类型">
                 <el-option label="仅文章" value="article"></el-option>
@@ -53,9 +56,9 @@
             <p>3. “序号”是链接，点击可以打开在相关TAPD项目中对应的WIKI（前提是你有访问权限）。</p>
             <p>4. “请选择历史问题”保存本session问题和答案历史，选择下拉框中的问题会直接加载答案列表。</p>    
             <p>5. "名称"是在相关TAPD项目WIKI中的目录结构，显示<i class="el-icon-check"></i>说明是文章，显示<i class="el-icon-info"></i>说明是知识点。</p>        
-            <p>6. 点击“内容”，可以在弹窗中看到完整的内容。同时也能看到相似度，即问题和答案之间的相似程度，越小越好，通常小于0.7是比较相似的</p>            
+            <p>6. 点击“内容”，可以在弹窗中看到完整的内容。同时也能看到相关度，即问题和答案之间的相关程度，相关度数值越小越<strong style="color: red;">相关</strong>，通常小于0.7是比较相关的。相关度限制可以通过“相关度”控件进行调整，限制值越小，搜索到的答案个数可能要越少</p>            
             <p>7. 2024-3-23，搜索范围覆盖履约项目经验库，G20票据FAQ，银企平台FQA第一部分。</p>
-            <p>8. 点击“JUMP”可以在几个助手功能之间跳转。</p>  
+            <p>8. 点击“JUMP”可以在几个助手功能之间跳转。</p>              
             <!-- 
             <p>4. 受后台逻辑限制，不一定每次都能返回“答案数量”个答案。</p>
             <p>5. 点击“方法体”内容，可以在弹窗中看到完整的代码。</p>
@@ -65,13 +68,13 @@
             <!-- 在这里添加更多的使用说明 -->
         </div>
         <span slot="footer" class="dialog-footer">
-            <p>Last update: 2024-3-28 10:30</p>
+            <p>Last update: 2024-3-29 17:00</p>
             <el-button @click="showInstructions = false">我知道了</el-button>
         </span>
     </el-dialog> 
     <el-dialog title="详细信息" :visible.sync="codeDialogVisible" :key="dialogKey" width="70%" :before-close="handleClose">
         <div>
-            <p><strong>({{currentID}}) </strong> <strong>相似度</strong> <sup>越小越好</sup>&nbsp&nbsp{{currentDistance | toFixed8}}, <strong>名称&nbsp</strong><a :href="currentURL" target="_blank">{{ currentName }}</a> </p>                
+            <p><strong>({{currentID}}) </strong> <strong>相关度</strong> <sup>越小越好</sup>&nbsp&nbsp{{currentDistance | toFixed8}}, <strong>名称&nbsp</strong><a :href="currentURL" target="_blank">{{ currentName }}</a> </p>                
         </div>
         <el-input type="textarea" v-model="currentContent" :rows="15"></el-input>
     </el-dialog>
@@ -187,7 +190,8 @@
                 answerType: 'both',
                 selectedAssistant:'',
                 limit_sum: 20,
-                limit_tp: 20                 
+                limit_tp: 20,
+                similarityThreshold: 0.7              
             },
             methods: {                
                 submitQuestion() {
@@ -222,7 +226,7 @@
                         headers: {
                             'Content-Type': 'application/json; charset=utf-8'
                         },
-                        body: JSON.stringify({ question: this.question, limit_sum:this.limit_sum, limit_tp:this.limit_tp})
+                        body: JSON.stringify({ question: this.question, limit_sum:this.limit_sum, limit_tp:this.limit_tp, threshold:this.similarityThreshold})
                     })
                         .then(response => {
                             if (!response.ok) {

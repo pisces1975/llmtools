@@ -36,7 +36,7 @@ class SearchRequirement:
         if not errflg:
             raise Exception("An error occurred: " + errmsg)
 
-    def lookup_vec(self, question, limit=10, bp=False):
+    def lookup_vec(self, question, limit=10, bp=False, threshold=0.9):
         LOG.debug("Start to create embedding of question ...")
         query_vec = create_embedding_bge(question)
         id_list = []
@@ -49,7 +49,10 @@ class SearchRequirement:
         results = []
         for i in range(limit):
             index = indices[0][i]
-            distance = distances[0][i]                 
+            distance = distances[0][i]      
+            if float(distance) > threshold:
+                LOG.debug(f'{i} Distance is beyond threshold, break, {distance} > {threshold}')
+                break           
             if bp:
                 #query_condition = BPStory.vector_id == index  
                 query = "SELECT workspace_id, creator, name, content, customer, modify_time, story_id FROM stories_bp WHERE vector_id = %s"
@@ -133,13 +136,14 @@ class SearchRequirement:
         question = request.json['question']
         limit = request.json['count']
         isBP = request.json['bp']
+        threshold = request.json['threshold']
         # if bpflag == 'true'.lower():
         #     isBP = True
         # else:
         #     isBP = False
 
-        LOG.debug(f"get question: {question}, limit: {limit}, isBP: {isBP}")  
-        matches, id_list = self.lookup_vec(question, limit, isBP)
+        LOG.debug(f"get question: {question}, limit: {limit}, isBP: {isBP}, threshold-{threshold}")  
+        matches, id_list = self.lookup_vec(question, limit, isBP, threshold)
 
         results = []
         for idx, match in enumerate(matches, start=1):

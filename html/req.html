@@ -16,6 +16,9 @@
         <el-form-item label="答案数量">
             <el-input-number v-model="questionCount" :min="1" :max="100" :step="1" :defaultValue="20" @change="handleChange" label="答案数量"></el-input-number>
         </el-form-item>
+        <el-form-item label="相关度">
+            <el-input-number v-model="similarityThreshold" :min="0.0" :max="1.5" :step="0.1" label="相关度"></el-input-number>
+        </el-form-item>
         <el-form-item label="">
             <el-checkbox v-model="bpflag">查询BP需求</el-checkbox>
         </el-form-item>
@@ -37,7 +40,8 @@
             <p>1. 使用自然语言描述问题，越详细越好。</p>
             <p>2. 查询银企平台的需求时，要勾选“查询BP需求”。</p>
             <p>3. 点击“项目列表”，展示目前需求库覆盖的TAPD项目，“序号”是链接，点击可以打开在相关TAPD项目，更新时间指TAPD需求导入需求库的时间。</p>
-            <p>4. 点击“JUMP”可以在几个助手功能之间跳转。</p>             
+            <p>4. 点击“JUMP”可以在几个助手功能之间跳转。</p> 
+            <p>5. 相关度限制可以通过“相关度”控件进行调整，相似度数值越小，问题和答案之间的相关程度越<strong style="color:red">大</strong>，相关度限制值设置的越小，搜索到的结果可能就越少</p>            
             <!-- 
             <p>4. 受后台逻辑限制，不一定每次都能返回“答案数量”个答案。</p>
             <p>5. 点击“方法体”内容，可以在弹窗中看到完整的代码。</p>
@@ -47,7 +51,7 @@
             <!-- 在这里添加更多的使用说明 -->
         </div>
         <span slot="footer" class="dialog-footer">
-            <p>Last update: 2024-3-28 10:30</p>
+            <p>Last update: 2024-3-29 17:30</p>
             <el-button @click="showInstructions = false">我知道了</el-button>
         </span>
     </el-dialog>
@@ -107,6 +111,7 @@
                 host:'210.12.129.83',
                 login_host:'210.12.129.83',
                 showInstructions: false,
+                similarityThreshold: 0.7,
                 selectedAssistant:''
             },
             methods: {
@@ -183,7 +188,7 @@
                         headers: {
                             'Content-Type': 'application/json; charset=utf-8'
                         },
-                        body: JSON.stringify({ question: this.question, count:this.questionCount, bp:this.bpflag})
+                        body: JSON.stringify({ question: this.question, count:this.questionCount, bp:this.bpflag, threshold:this.similarityThreshold})
                     })
                         .then(response => {
                             if (!response.ok) {
@@ -194,6 +199,12 @@
                         .then(data => {                            
                             this.tableData = data;
                             console.log(this.tableData)
+                            loadingMessage.close();
+                            this.$message({
+                                message: `本次查询到了${this.tableData.length}条结果`,
+                                type: 'success',
+                                duration: 5000 // This is optional, adjust the duration as needed
+                            });
                         })
                         .catch(error => {                            
                             this.$message({ // 显示提示信息

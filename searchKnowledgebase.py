@@ -27,7 +27,7 @@ class SearchKB:
         if not errflg:
             raise Exception("An error occurred: " + errmsg)
 
-    def query(self, question, limit_sum, limit_tp):
+    def query(self, question, limit_sum, limit_tp, threshold):
         LOG.debug("Start to create embedding of question ...")
         query_vec = create_embedding_bge(question)   
 
@@ -40,6 +40,9 @@ class SearchKB:
             for i in range(limit_sum):
                 index = indices[0][i]
                 distance = distances[0][i]     
+                if float(distance) > threshold:
+                    LOG.debug(f'{i} Distance is beyond threshold, break, {distance} > {threshold}')
+                    break
                 query = "SELECT ID, name, description, full_path, URL FROM knowledgebase WHERE vector_id=%s"
                 self.db.execute_query(query, (int(index), ))
                 record = self.db.fetchone()    
@@ -66,7 +69,10 @@ class SearchKB:
             LOG.debug(f'Complete FAISS DB search, get {limit_tp} entries')
             for i in range(limit_tp):
                 index = indices[0][i]
-                distance = distances[0][i]     
+                distance = distances[0][i]   
+                if float(distance) > threshold:
+                    LOG.debug(f'{i} Distance is beyond threshold, break, {distance} > {threshold}')
+                    break  
                 query = "SELECT id, wiki_id, content FROM textpoints_1204 WHERE vector_id=%s"
                 self.db.execute_query(query, (int(index), ))
                 record = self.db.fetchone()    
@@ -102,9 +108,10 @@ class SearchKB:
         question = request.json['question']
         limit_sum = request.json['limit_sum']
         limit_tp = request.json['limit_tp']    
+        threshold = request.json['threshold']
 
-        LOG.debug(f"get question: {question}, limit_sum-{limit_sum}, limit_tp-{limit_tp}")  
-        matches, id_list = self.query(question, limit_sum, limit_tp)
+        LOG.debug(f"get question: {question}, limit_sum-{limit_sum}, limit_tp-{limit_tp}, threshold-{threshold}")  
+        matches, id_list = self.query(question, limit_sum, limit_tp, threshold)
 
         results = []
         #matches = create_debug_result()

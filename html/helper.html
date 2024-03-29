@@ -18,6 +18,9 @@
         <el-form-item label="答案数量">
             <el-input-number v-model="questionCount" :min="1" :max="100" :step="1" :defaultValue="20" @change="handleChange" label="答案数量"></el-input-number>
         </el-form-item>
+        <el-form-item label="相关度">
+            <el-input-number v-model="similarityThreshold" :min="0.0" :max="1.5" :step="0.1" label="相关度"></el-input-number>
+        </el-form-item>
         <!-- <el-form-item label="">
             <el-checkbox v-model="bpflag">查询BP需求</el-checkbox>
         </el-form-item> -->
@@ -50,7 +53,7 @@
     <el-dialog title="使用说明" :visible.sync="showInstructions" width="50%">
         <div>
             <p>1. 使用自然语言描述问题，越详细越好。</p>
-            <p>2. "Package"显示的数字为向量距离，越小说明问题和注释（方法体）的语义越相似。</p>
+            <p>2. "Package"显示的数字为相关度，越小说明问题和注释（方法体）的语义越<strong style="color: red;">相关</strong>，通常小于0.7是比较相关的。相关度限制可以通过“相关度”控件进行调整，限制值越小，搜索到的答案个数可能要越少。</p>
             <p>3. "类名和方法名"显示<i class="el-icon-check"></i>说明是Class，显示<i class="el-icon-info"></i>说明是interface。</p>
             <p>4. 受后台逻辑限制，不一定每次都能返回“答案数量”个答案。</p>
             <p>5. 点击“方法体”内容，可以在弹窗中看到完整的代码。</p>
@@ -62,7 +65,7 @@
             <!-- 在这里添加更多的使用说明 -->
         </div>
         <span slot="footer" class="dialog-footer">
-            <p>Last update: 2024-3-28 10:00</p>
+            <p>Last update: 2024-3-29 17:00</p>
             <el-button @click="showInstructions = false">我知道了</el-button>
         </span>
     </el-dialog>
@@ -196,7 +199,8 @@
                 currentID: 0,
                 currentDistance: '',
                 selectedAssistant:'',
-                dialogKey: 0       
+                dialogKey: 0,
+                similarityThreshold:0.7       
             },
             methods: {                
                 submitQuestion() {
@@ -219,7 +223,7 @@
                         headers: {
                             'Content-Type': 'application/json; charset=utf-8'
                         },
-                        body: JSON.stringify({ question: this.question, count:this.questionCount, module:this.selectedModule})
+                        body: JSON.stringify({ question: this.question, count:this.questionCount, module:this.selectedModule, threshold:this.similarityThreshold})
                     })
                         .then(response => {
                             if (!response.ok) {

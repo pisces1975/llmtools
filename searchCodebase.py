@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 #import requests
 
-AMP_NUM = 3
+AMP_NUM = 5
 LOG = logger.Logger(name=logger.SEARCHALL_LOG_FILE_NAME, debug=True).logger
 
 module_name_mapping = {'N20核算':'atg-accounting',
@@ -33,7 +33,7 @@ class SearchCodebase:
         if not errflg:
             raise Exception("An error occurred: " + errmsg)
         
-    def query(self, question, limit, module):
+    def query(self, question, limit, module, threshold):
         LOG.debug("Start to create embedding of question ...")
         query_vec = create_embedding_bge(question)
         git_path = f"https://e.gitee.com/nstc/repos/nstc/{module_name_mapping[module]}/blob/master/"    
@@ -47,7 +47,10 @@ class SearchCodebase:
         res_count = 1
         for i in range(limit):
             index = indices[0][i]
-            distance = distances[0][i]                 
+            distance = distances[0][i]    
+            if float(distance) > threshold:
+                LOG.debug(f'{i} Distance is beyond threshold, break, {distance} > {threshold}')
+                break             
             query = "SELECT package, class, method, com_all, content, file_path, class_type FROM method_info WHERE vector_id=%s and module=%s"
             self.db.execute_query(query, (int(index),module))
             record = self.db.fetchone()
@@ -96,9 +99,10 @@ class SearchCodebase:
         question = request.json['question']
         limit = request.json['count']
         module = request.json['module']
+        threshold = request.json['threshold']
 
-        LOG.debug(f"get question: {question}, limit: {limit}, module: {module}")  
-        matches, id_list = self.query(question, limit*AMP_NUM, module)
+        LOG.debug(f"get question: {question}, limit: {limit}, module: {module}, threshold-{threshold}")  
+        matches, id_list = self.query(question, limit*AMP_NUM, module, threshold)
 
         results = []
         #matches = create_debug_result()
