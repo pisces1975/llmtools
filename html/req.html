@@ -11,16 +11,17 @@
   <div id="app">
     <!-- <el-label>请输入问题</el-label>-->
     <el-input v-model="question" placeholder="请输入问题" style="width: 70%"></el-input>
+    <el-button @click="showInstructions = true" size="large"><i class="el-icon-question"></i></el-button>
     <p></p>
     <el-form :inline="true" :model="formInline" class="demo-form-inline">
         <el-form-item label="答案数量">
-            <el-input-number v-model="questionCount" :min="1" :max="100" :step="1" :defaultValue="20" @change="handleChange" label="答案数量"></el-input-number>
+            <el-input-number v-model="questionCount" :min="1" :max="100" :step="1" :defaultValue="20" @change="handleChange" label="答案数量" style="width: 140px;"></el-input-number>
         </el-form-item>
         <el-form-item label="相关度">
-            <el-input-number v-model="similarityThreshold" :min="0.0" :max="1.5" :step="0.1" label="相关度"></el-input-number>
+            <el-input-number v-model="similarityThreshold" :min="0.0" :max="1.5" :step="0.1" label="相关度" style="width: 140px;"></el-input-number>
         </el-form-item>
         <el-form-item label="">
-            <el-checkbox v-model="bpflag">查询BP需求</el-checkbox>
+            <el-checkbox v-model="bpflag">查BP</el-checkbox>
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="submitQuestion">查询</el-button>
@@ -28,8 +29,10 @@
         <el-form-item>
             <el-button @click="getList" type="info">项目列表</el-button>
         </el-form-item>   
-        <el-button @click="showInstructions = true" size="large"><i class="el-icon-question"></i></el-button>
-        <el-select v-model="selectedAssistant" placeholder="Jump" @change="handleAssistantChange">
+        <el-select v-model="selectedHistory" placeholder="请选择历史问题" @change="showHistoryData">
+            <el-option v-for="(item, index) in historyData" :key="index" :label="item.question" :value="index"></el-option>
+        </el-select>
+        <el-select v-model="selectedAssistant" placeholder="跳转" @change="handleAssistantChange" style="width: 140px;">
             <el-option label="知识库助手" value="kb"></el-option>
             <el-option label="代码库助手" value="helper"></el-option>
             <el-option label="编码助手" value="copilot"></el-option>
@@ -38,10 +41,11 @@
       <el-dialog title="使用说明" :visible.sync="showInstructions" width="50%">
         <div>
             <p>1. 使用自然语言描述问题，越详细越好。</p>
-            <p>2. 查询银企平台的需求时，要勾选“查询BP需求”。</p>
+            <p>2. 查询银企平台的需求时，要勾选“查BP”。</p>
             <p>3. 点击“项目列表”，展示目前需求库覆盖的TAPD项目，“序号”是链接，点击可以打开在相关TAPD项目，更新时间指TAPD需求导入需求库的时间。</p>
-            <p>4. 点击“JUMP”可以在几个助手功能之间跳转。</p> 
+            <p>4. 点击“跳转”可以在几个助手功能之间跳转。</p> 
             <p>5. 相关度限制可以通过“相关度”控件进行调整，相似度数值越小，问题和答案之间的相关程度越<strong style="color:red">大</strong>，相关度限制值设置的越小，搜索到的结果可能就越少</p>            
+            <p>6. “请选择历史问题”保存本session问题和答案历史，选择下拉框中的问题会直接加载答案列表。</p>
             <!-- 
             <p>4. 受后台逻辑限制，不一定每次都能返回“答案数量”个答案。</p>
             <p>5. 点击“方法体”内容，可以在弹窗中看到完整的代码。</p>
@@ -51,7 +55,7 @@
             <!-- 在这里添加更多的使用说明 -->
         </div>
         <span slot="footer" class="dialog-footer">
-            <p>Last update: 2024-3-29 17:30</p>
+            <p>Last update: 2024-3-30 19:30</p>
             <el-button @click="showInstructions = false">我知道了</el-button>
         </span>
     </el-dialog>
@@ -91,7 +95,9 @@
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/element-ui@2.15.6/lib/index.js"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
-    <script>        
+    <script src="./host.js"></script>
+    <script> 
+        //import {host_ip, login_host_ip} from './host.js';       
         new Vue({
             el: '#app',
             data: {
@@ -104,15 +110,12 @@
                 dialogVisible: false,
                 prjtableData: [],
                 dialogWidth: '900px',
-                //host: '10.101.9.50',				
-                //login_host: '10.101.9.50',
-                //host: '127.0.0.1',
-                //login_host: '127.0.0.1',
-                host:'210.12.129.83',
-                login_host:'210.12.129.83',
+                host: host_ip,
+                login_host: login_host_ip,
                 showInstructions: false,
                 similarityThreshold: 0.7,
-                selectedAssistant:''
+                selectedAssistant:'',
+                historyData:[]
             },
             methods: {
                 getList() {
@@ -131,6 +134,10 @@
                         });
                     });
                 },
+                showHistoryData(selectedIndex) {
+                    // 根据选中的历史问题索引，显示对应的答案
+                    this.tableData = this.historyData[selectedIndex].data;                
+                },  
                 checkLogin() {
                     const userKey = sessionStorage.getItem('userKey');
                     fetch('http://' + this.login_host + ':5111/checkLogin', {
@@ -150,7 +157,12 @@
                             throw new Error('Network response was not ok');
                         }
                         }
-                        // 可以在这里处理登录成功的情况
+                        storedString  = sessionStorage.getItem('reqhistory');
+                        if ( storedString !== null) {
+                            this.historyData = JSON.parse(storedString);     
+                        } else { 
+                            this.historyData = []
+                        } // 可以在这里处理登录成功的情况
                     })
                     .catch(error => {
                         console.error('Error:', error);
@@ -198,8 +210,11 @@
                         })
                         .then(data => {                            
                             this.tableData = data;
-                            console.log(this.tableData)
+                            this.historyData.push({ question: this.question  +' ['+ (new Date().toLocaleTimeString()) +']', data: data});
+                            serializedObject = JSON.stringify(this.historyData);
+                            sessionStorage.setItem('reqhistory', serializedObject);//console.log(this.tableData)
                             loadingMessage.close();
+
                             this.$message({
                                 message: `本次查询到了${this.tableData.length}条结果`,
                                 type: 'success',

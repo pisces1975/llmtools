@@ -3,6 +3,7 @@ from utilities import logger
 from searchCodebase import SearchCodebase
 from searchKnowledgebase import SearchKB
 from searchRequirement import SearchRequirement
+from copilot import Copilot
 from flask_cors import CORS
 import json
 
@@ -14,6 +15,7 @@ CORS(app)
 code_retriever = SearchCodebase()
 kb_retriever = SearchKB()
 req_retriever = SearchRequirement()
+coding_helper = Copilot()
 
 @app.route('/getProjectList', methods=['GET'])
 def get_project_list():
@@ -44,6 +46,16 @@ def searchCode():
     LOG.debug(f'Invoke: search_knowledge, {question} {limit} {module}')
     return jsonify(code_retriever.search_codebase(request))
 
+@app.route('/ccpilot', methods=['POST'])
+def codinghelper():
+    task = request.json['tasks']
+    model = request.json['models']
+    sourceCode = request.json['sourceCode']
+
+    tmpStr = sourceCode[:100].replace('\n', ' ')
+    LOG.debug(f"Invole: copilot, {task}, {model}, code: ({len(sourceCode)})--> {tmpStr}")
+
+    return jsonify(coding_helper.process_query(request))
 if __name__ == '__main__':
     # host = 'localhost'
     with open('config.json', 'r') as config_file:

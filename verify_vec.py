@@ -9,9 +9,9 @@ import faiss
 mode = 'req'
 LOG = Logger(name='local', debug=True).logger
 
-def validate(db_handler, index_file, db_name):
+def validate(db_handler, index_file, db_name, invalid_vector_id=99999):
     index = faiss.read_index(index_file)
-    query = f"SELECT vector_id FROM {db_name} WHERE vector_id is not NULL and vector_id != 99999"
+    query = f"SELECT vector_id FROM {db_name} WHERE vector_id is not NULL and vector_id != {invalid_vector_id}"
     db_handler.execute_query(query)
     res = db_handler.fetchall()
     if len(res) - index.ntotal == 0:
@@ -33,8 +33,8 @@ def validate(db_handler, index_file, db_name):
     db_handler.execute_query(query)
     t_res = db_handler.fetchone()
     minv, maxv = t_res
-    if minv==0 and maxv==len(res)-1:
-        debug_str = 'PASS'
+    if (minv==0 or minv==-1) and maxv==len(res)-1:
+        debug_str = 'PASS'     
     else:
         debug_str = 'FAIL'
     LOG.debug(f'{debug_str} vector_id range check. Min value is {minv}, max is {maxv}')
@@ -61,11 +61,11 @@ if mode == 'kb':
 elif mode == 'req':
     db_handler = DBHandler('requirements')
     db_name = 'stories'
-    index_file = 'vecdb/story.faiss'
-    validate(db_handler, index_file, db_name)
+    index_file = 'vecdb/story_new.faiss'
+    validate(db_handler, index_file, db_name, invalid_vector_id=-1)
 
     db_name = 'stories_bp'
-    index_file = 'vecdb/bp_story.faiss'
+    index_file = 'vecdb/bp_story_new.faiss'
     validate(db_handler, index_file, db_name)
 elif mode == 'code':
     db_handler = DBHandler('codebase')

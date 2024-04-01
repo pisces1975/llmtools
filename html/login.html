@@ -117,15 +117,13 @@
   <script src="https://fastly.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
   <script src="https://fastly.jsdelivr.net/npm/element-ui@2.15.6/lib/index.js"></script>
   <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script src="./host.js"></script>
   <script>
-    
+    //import {host_ip, login_host_ip} from './host.js';
   new Vue({
             el: '#app',
             data: {
-                //host:'127.0.0.1',
-                //host:'10.101.9.50',
-                host:'210.12.129.83',
-                //login_host:'210.12.129.83',
+                host: host_ip,
                 username:'',
                 password:'',
                 isloading: false,

@@ -13,16 +13,17 @@
   <div id="app">
     <!-- <el-label>请输入问题</el-label>-->
     <el-input v-model="question" placeholder="请输入问题" style="width: 70%"></el-input>
+    <el-button @click="showInstructions = true"><i class="el-icon-question"></i></el-button>
     <p></p>
     <el-form :inline="true" :model="formInline" class="demo-form-inline">
         <el-form-item label="答案数量">
-            <el-input-number v-model="questionCount" :min="1" :max="100" :step="1" :defaultValue="20" @change="handleChange" label="答案数量"></el-input-number>
+            <el-input-number v-model="questionCount" :min="1" :max="100" :step="1" :defaultValue="20" @change="handleChange" label="答案数量" style="width: 140px;"></el-input-number>
         </el-form-item>
         <el-form-item label="相关度">
-            <el-input-number v-model="similarityThreshold" :min="0.0" :max="1.5" :step="0.1" label="相关度"></el-input-number>
+            <el-input-number v-model="similarityThreshold" :min="0.0" :max="1.5" :step="0.1" label="相关度" style="width: 140px;"></el-input-number>
         </el-form-item>
         <el-form-item label="答案类型">
-            <el-select v-model="answerType" placeholder="请选择答案类型">
+            <el-select v-model="answerType" placeholder="请选择答案类型" style="width: 140px;">
                 <el-option label="仅文章" value="article"></el-option>
                 <el-option label="仅知识点" value="knowledgePoint"></el-option>
                 <el-option label="文章和知识点" value="both"></el-option>
@@ -33,12 +34,12 @@
         </el-form-item> -->        
         <el-form-item>
             <el-button type="primary" @click="submitQuestion">查询</el-button>
-            <el-button @click="showInstructions = true" size="large"><i class="el-icon-question"></i></el-button>
+            
         </el-form-item>
         <el-select v-model="selectedHistory" placeholder="请选择历史问题" @change="showHistoryData">
             <el-option v-for="(item, index) in historyData" :key="index" :label="item.question" :value="index"></el-option>
         </el-select>
-        <el-select v-model="selectedAssistant" placeholder="Jump" @change="handleAssistantChange">
+        <el-select v-model="selectedAssistant" placeholder="跳转" @change="handleAssistantChange" style="width: 140px;">
             <el-option label="需求助手" value="req"></el-option>
             <el-option label="代码库助手" value="helper"></el-option>
             <el-option label="编码助手" value="copilot"></el-option>
@@ -58,7 +59,7 @@
             <p>5. "名称"是在相关TAPD项目WIKI中的目录结构，显示<i class="el-icon-check"></i>说明是文章，显示<i class="el-icon-info"></i>说明是知识点。</p>        
             <p>6. 点击“内容”，可以在弹窗中看到完整的内容。同时也能看到相关度，即问题和答案之间的相关程度，相关度数值越小越<strong style="color: red;">相关</strong>，通常小于0.7是比较相关的。相关度限制可以通过“相关度”控件进行调整，限制值越小，搜索到的答案个数可能要越少</p>            
             <p>7. 2024-3-23，搜索范围覆盖履约项目经验库，G20票据FAQ，银企平台FQA第一部分。</p>
-            <p>8. 点击“JUMP”可以在几个助手功能之间跳转。</p>              
+            <p>8. 点击“跳转”可以在几个助手功能之间跳转。</p>              
             <!-- 
             <p>4. 受后台逻辑限制，不一定每次都能返回“答案数量”个答案。</p>
             <p>5. 点击“方法体”内容，可以在弹窗中看到完整的代码。</p>
@@ -68,7 +69,7 @@
             <!-- 在这里添加更多的使用说明 -->
         </div>
         <span slot="footer" class="dialog-footer">
-            <p>Last update: 2024-3-29 17:00</p>
+            <p>Last update: 2024-3-30 19:30</p>
             <el-button @click="showInstructions = false">我知道了</el-button>
         </span>
     </el-dialog> 
@@ -103,17 +104,7 @@
                     <el-input type="textarea" v-model="scope.row.content" :rows="5" ></el-input>
                 </div>
             </template>
-        </el-table-column> 
-
-        
-
-        <!-- <el-table-column prop="Content" label="方法体" width="450px">
-            <template slot-scope="scope">
-                
-                <pre class="code-container" @click="openCodeDialog(scope.row.Content, scope.row)"><code class="language-java">{{ scope.row.Content }}</code></pre>
-            </template>
-        </el-table-column> -->
-        <!-- <el-table-column prop="内容" label="内容"></el-table-column> -->
+        </el-table-column>         
     </el-table>
   </div>
 
@@ -153,8 +144,10 @@
     <script src="https://fastly.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
     <script src="https://fastly.jsdelivr.net/npm/element-ui@2.15.6/lib/index.js"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="./host.js"></script>
     <!--  <script src="https://fastly.jsdelivr.net/npm/prismjs/prism.js"></script> -->
-    <script>        
+    <script>   
+        //import {host_ip, login_host_ip} from './host.js';     
         new Vue({
             el: '#app',
             data: {
@@ -163,16 +156,8 @@
                 tableData: [],
                 selectedOptions: '',  // 用户选择的多选选项
                 full_options: [],  // 可以从后台服务获取的选项
-                //bpflag: false,
-                //dialogVisible: false,
-                //prjtableData: [],
-                //dialogWidth: '900px',                
-                //login_host:'10.101.9.50',
-                //host: '10.101.9.50',
-                //host: '127.0.0.1',
-                //login_host: '127.0.0.1',
-                host:'210.12.129.83',
-                login_host:'210.12.129.83',
+                host: host_ip,
+                login_host: login_host_ip,
                 //selectedModule: 'N20结算',
                 historyData: [], // 存储历史问题和答案   
                 isLoading: false, 
@@ -253,7 +238,9 @@
                                 // 同时搜索文章和知识点
                                 this.selectedOptions = '混合'
                             }
-                            this.historyData.push({ question: '(' + this.selectedOptions + ') ' + this.question, data: data});
+                            this.historyData.push({ question: '(' + this.selectedOptions + ') ' + this.question +' ['+ (new Date().toLocaleTimeString()) +']', data: data});
+                            serializedObject = JSON.stringify(this.historyData);
+                            sessionStorage.setItem('kbhistory', serializedObject);
                             loadingMessage.close();
                             this.$message({
                                 message: `本次查询到了${this.tableData.length}条结果`,
@@ -293,15 +280,21 @@
                     })
                     .then(response => {
                         if (!response.ok) {
-                        if (response.status === 401) {
-                            if (confirm('请先登录，点击确定跳转到登录页面。')) {
-                            window.location.href = 'login.html';
-                            }    
-                        } else {
-                            throw new Error('Network response was not ok');
+                            if (response.status === 401) {
+                                if (confirm('请先登录，点击确定跳转到登录页面。')) {
+                                window.location.href = 'login.html';
+                                }    
+                            } else {
+                                throw new Error('Network response was not ok');
+                            }
                         }
-                        }
-                        // 可以在这里处理登录成功的情况
+                        // 可以在这里处理登录成功的情况                        
+                        storedString  = sessionStorage.getItem('kbhistory');
+                        if ( storedString !== null) {
+                            this.historyData = JSON.parse(storedString);     
+                        } else { 
+                            this.historyData = []
+                        } 
                     })
                     .catch(error => {
                         console.error('Error:', error);
@@ -317,7 +310,7 @@
                 },
                 showHistoryData(selectedIndex) {
                     // 根据选中的历史问题索引，显示对应的答案
-                    this.tableData = this.historyData[selectedIndex].data;
+                    this.tableData = this.historyData[selectedIndex].data;                
                 },               
                 openCodeDialog(row) {
                     this.currentContent = row.content;

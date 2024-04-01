@@ -1,0 +1,4 @@
+2024-03-27 11:12:44,965 - DEBUG - Successfully connect mysql database - codebase
+2024-03-27 11:12:44,966 - DEBUG - Connection is lost, reconnect
+2024-03-27 11:12:45,021 - DEBUG - query is [SELECT * FROM method_info WHERE ID=1234], param is [()]
+2024-03-27 11:12:45,021 - DEBUG - query is OK
