@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTML with Element UI</title>
+  <!-- 引入 Element UI 样式 -->
+  <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+</head>
+
+<body>
+  <div id="app">
+    <el-input v-model="inputValue"></el-input>
+    <el-button @click="submit">提交</el-button>
+    <div v-html="responseText"></div>
+    <el-image v-for="imageUrl in imageUrls" :src="imageUrl" :key="imageUrl"></el-image>
+  </div>
+
+  <!-- 引入 Vue.js 和 Element UI 库 -->
+  <script src="https://unpkg.com/vue@2.6.11/dist/vue.min.js"></script>
+  <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+
+  <script>
+    new Vue({
+      el: '#app',
+      data() {
+        return {
+          inputValue: '',
+          responseText: '',
+          imageUrls: []
+        };
+      },
+      methods: {
+        submit() {
+          // 发送请求将数值提交给后台，并获取返回的文本
+          fetch('http://localhost:5122/query', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ value: this.inputValue })
+          })
+            .then(response => response.json())
+            .then(data => {
+              this.responseText = data.text;
+              this.extractImageUrls();
+            })
+            .catch(error => {
+              console.error('Error:', error);
+            });
+        },
+        extractImageUrls() {
+            const regex = /<a href='([^']+)'>/g;
+            const matches = this.responseText.matchAll(regex);
+            for (const match of matches) {
+                this.imageUrls.push(match[1]);
+            }
+        }
+      },
+      
+    });
+  </script>
+</body>
+
+</html>

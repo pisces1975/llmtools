@@ -2,3 +2,8 @@
 *.pyc
 *.faiss
 *.index
+*.png
+*.xls
+*.xlsx
+*.jpg
+logs/*

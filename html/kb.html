@@ -77,7 +77,9 @@
         <div>
             <p><strong>({{currentID}}) </strong> <strong>相关度</strong> <sup>越小越好</sup>&nbsp&nbsp{{currentDistance | toFixed8}}, <strong>名称&nbsp</strong><a :href="currentURL" target="_blank">{{ currentName }}</a> </p>                
         </div>
-        <el-input type="textarea" v-model="currentContent" :rows="15"></el-input>
+        <!--<el-input type="textarea" v-model="currentContent" :rows="15"></el-input> -->
+        <div v-html="currentContent_adjust"></div>
+        <!--<el-image v-for="imageUrl in imageUrls" :src="imageUrl" :key="imageUrl"></el-image> -->
     </el-dialog>
     <el-table :data="tableData" style="width: 100%">
         <el-table-column prop="ID" label="序号" width="50px">
@@ -176,9 +178,17 @@
                 selectedAssistant:'',
                 limit_sum: 20,
                 limit_tp: 20,
-                similarityThreshold: 0.7              
+                similarityThreshold: 0.7,
+                imageUrls: [],
+                currentContent_adjust:''        
             },
-            methods: {                
+            methods: {    
+                extractImageUrls() {
+                    //console.log('start to extract image url: ' + this.currentContent);
+                    const urlRegex = /(?<=href=\")[^"]+(?=\")/g;
+                    this.imageUrls = this.currentContent.match(urlRegex);
+                    console.log(this.imageUrls)                    
+                },            
                 submitQuestion() {
                     if (this.question.length < 5) {
                         this.$message({
@@ -311,17 +321,24 @@
                 showHistoryData(selectedIndex) {
                     // 根据选中的历史问题索引，显示对应的答案
                     this.tableData = this.historyData[selectedIndex].data;                
-                },               
+                },                   
                 openCodeDialog(row) {
-                    this.currentContent = row.content;
+                    let tempStr = row.content.replace(/\n/g, "<br>");
+                    this.currentContent = tempStr.replace(/<a\s+href="(https?:\/\/www\.tapd\.cn\/tfl\/(?:captures|pictures)\/[^\/]+\/([^\s"]+\.png))"[^>]*>(.*?)<\/a>/g, function(match, imageUrl, imageName) {
+                        return '<img src="images/' + imageName + '" alt="' + imageName + '" style="max-width: 100%;">';
+                    });
+
+                    this.currentContent_adjust = this.currentContent
                     //this.currentPackage = row.Package;                    
                     this.currentDistance = row.distance;                    
                     this.currentURL = row.URL;
                     this.currentName = row.name;
                     this.currentID = row.ID;
-                    console.log(row)
+                    
                     this.codeDialogVisible = true;
-                    this.dialogKey++; // 增加key的值来强制重新渲染                    
+                    this.dialogKey++; // 增加key的值来强制重新渲染    
+                    this.extractImageUrls();   
+                    console.log(row);             
                 },
                 handleClose(done) {
                     this.codeDialogVisible = false;

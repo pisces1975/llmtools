@@ -11,6 +11,8 @@ import json
 #from xinference.client import Client
 #from flask_cors import CORS 
 import sys
+import pandas as pd
+import random
 #from datetime import datetime
 #import pandas as pd
 #import requests
@@ -26,6 +28,35 @@ class SearchKB:
         LOG.debug(f"Open FAISS db with s-{self.summary_index.ntotal} entires, t-{self.textpoint_index.ntotal} entries")
         if not errflg:
             raise Exception("An error occurred: " + errmsg)
+
+    def query_test(self, question, limit_sum, limit_tp, threshold):
+        df = pd.read_excel('test.xlsx')
+        random_numbers = random.sample(range(len(df)), 35)
+        id_list = []
+        results = []
+        for idx, row in df.iterrows():
+            if idx in random_numbers:
+                query = "SELECT name, full_path, URL FROM knowledgebase WHERE ID=%s"
+                self.db.execute_query(query, (row['wiki_id'], ))
+                rec = self.db.fetchall()
+                name, full_path, URL = rec[0]
+                item = {
+                    'name': name,
+                    #'content': row['content'].replace(')','').replace('(',''),
+                    'content': row['content'].replace('a href','a href').replace(' target="_blank"', ''),
+                    'type': 'textpoint',
+                    'full_path': full_path,
+                    'URL': URL,
+                    'distance': 0.55555
+                }        
+                results.append(item)
+                id_item = {
+                    'id': int(idx),
+                    'type': 'textpoint'
+                }
+                id_list.append(id_item)    
+
+        return results, id_list                    
 
     def query(self, question, limit_sum, limit_tp, threshold):
         LOG.debug("Start to create embedding of question ...")
@@ -111,8 +142,9 @@ class SearchKB:
         threshold = request.json['threshold']
 
         LOG.debug(f"get question: {question}, limit_sum-{limit_sum}, limit_tp-{limit_tp}, threshold-{threshold}")  
-        matches, id_list = self.query(question, limit_sum, limit_tp, threshold)
-
+        #matches, id_list = self.query(question, limit_sum, limit_tp, threshold)
+        matches, id_list = self.query_test(question, limit_sum, limit_tp, threshold)
+        
         results = []
         #matches = create_debug_result()
         for idx, match in enumerate(matches, start=1):
