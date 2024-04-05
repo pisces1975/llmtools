@@ -32,6 +32,10 @@ class SearchCodebase:
         LOG.debug(f"Open FAISS db with {self.method_index.ntotal} entires, cover {module_name_mapping.keys()}")
         if not errflg:
             raise Exception("An error occurred: " + errmsg)
+
+    def create_log(self, username, type, question):
+        query = 'INSERT INTO qlog (username, type, question) VALUES (%s,%s,%s)'
+        self.db.execute_query(query, (username, type, question))
         
     def query(self, question, limit, module, threshold):
         LOG.debug("Start to create embedding of question ...")

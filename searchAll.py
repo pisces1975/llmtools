@@ -27,6 +27,8 @@ def searchRequirement():
     question = request.json['question']
     limit = request.json['count']
     isBP = request.json['bp']
+    username = request.json['username']
+    code_retriever.create_log(username, "REQ", f"{question} {limit} {isBP}")
     LOG.debug(f'Invoke: search_req, {question} {limit} {isBP}')
     return jsonify(req_retriever.search_req(request))
 
@@ -35,6 +37,8 @@ def searchKB():
     question = request.json['question']
     limit_sum = request.json['limit_sum']
     limit_tp = request.json['limit_tp']  
+    username = request.json['username']
+    code_retriever.create_log(username, "KB", f"{question} {limit_sum} {limit_tp}")
     LOG.debug(f'Invoke: search_knowledge, {question} {limit_sum} {limit_tp}')
     return jsonify(kb_retriever.search_knowledge(request))
 
@@ -43,7 +47,9 @@ def searchCode():
     question = request.json['question']
     limit = request.json['count']
     module = request.json['module']
-    LOG.debug(f'Invoke: search_knowledge, {question} {limit} {module}')
+    username = request.json['username']
+    code_retriever.create_log(username, "CODE", f"{question} {limit} {module}")
+    LOG.debug(f'Invoke: search_code, {question} {limit} {module}')
     return jsonify(code_retriever.search_codebase(request))
 
 @app.route('/ccpilot', methods=['POST'])
@@ -51,8 +57,9 @@ def codinghelper():
     task = request.json['tasks']
     model = request.json['models']
     sourceCode = request.json['sourceCode']
-
+    username = request.json['username']
     tmpStr = sourceCode[:100].replace('\n', ' ')
+    code_retriever.create_log(username, "COPILOT", f"{task}, {model}, code: ({len(sourceCode)})--> {tmpStr}")
     LOG.debug(f"Invole: copilot, {task}, {model}, code: ({len(sourceCode)})--> {tmpStr}")
 
     return jsonify(coding_helper.process_query(request))

@@ -55,16 +55,18 @@
             <!-- 在这里添加更多的使用说明 -->
         </div>
         <span slot="footer" class="dialog-footer">
-            <p>Last update: 2024-3-30 19:30</p>
+            <p>Last update: 2024-4-4 21:44</p>
             <el-button @click="showInstructions = false">我知道了</el-button>
         </span>
     </el-dialog>
 
       <el-dialog title="项目列表" :visible.sync="dialogVisible" :width="dialogWidth">
-        <el-table :data="prjtableData">
-          <!-- <el-table-column prop="date" label="日期"></el-table-column>
-          <el-table-column prop="name" label="姓名"></el-table-column>
-          <el-table-column prop="address" label="地址"></el-table-column> -->
+        <div style="display: flex; align-items: center;">
+            <el-input v-model="nameFilter" placeholder="输入名称进行过滤" style="margin-right: 10px;"></el-input>
+            <el-input v-model="systemFilter" placeholder="输入系统进行过滤" style="margin-right: 10px;"></el-input>
+            <el-button type="primary" @click="filterProjects">搜索</el-button>
+          </div>
+        <el-table :data="filteredProjects">          
           <el-table-column prop="序号" label="序号" width="60">
             <template slot-scope="scope">
                 <a :href="scope.row.URL" target="_blank">{{ scope.row.序号 }}</a>
@@ -76,6 +78,14 @@
             <el-table-column prop="更新时间" label="更新时间" width="150"></el-table-column>
             <el-table-column prop="管理员" label="管理员"></el-table-column>
         </el-table>
+        <el-pagination
+            :current-page="currentPage"
+            :page-sizes="paginationConfig.pageSizes"
+            :page-size="paginationConfig.pageSize"
+            :total="paginationConfig.total"
+            layout="total, sizes, prev, pager, next, jumper"
+            @current-change="handlePaginationChange"
+            ></el-pagination>
       </el-dialog>
 
     <el-table :data="tableData" style="width: 95%">
@@ -115,24 +125,66 @@
                 showInstructions: false,
                 similarityThreshold: 0.7,
                 selectedAssistant:'',
-                historyData:[]
+                historyData:[],
+                nameFilter: '',
+                systemFilter: '',
+                filteredProjects: [],
+                currentPage: 1,
+                paginationConfig: {
+                    currentPage: 1,
+                    pageSize: 10,
+                    pageSizes: [10, 20, 30], // 可选的每页显示数量
+                    layout: 'total, sizes, prev, pager, next, jumper',
+                    total: 0 // 总记录数，需要根据实际情况进行设置
+                },
+                username:''
             },
+            watch: {
+                currentPage(newPage) {
+                    this.handlePaginationChange(newPage);
+                },
+                // 其他监听...
+                },
             methods: {
-                getList() {
-                axios.get("http://" + this.host + ":5009/getProjectList")
-                    .then(response => {
-                        this.prjtableData = response.data;
-                        this.dialogVisible = true;
-                    })
-                    .catch(error => {
-                        console.error("获取列表失败：", error);
-                        this.$message({ // 显示提示信息
-                            message: '获取列表失败',
-                            type: 'error',
-                            duration: 2000, // 设置为0则不会自动关闭
-                            //showClose: true // 显示关闭按钮
+                handlePaginationChange(currentPage) {
+                    this.currentPage = currentPage;
+                    // 根据当前页码重新计算filteredProjects，例如从后台获取数据
+                    // this.filteredProjects = ...
+                    const startIndex = (currentPage - 1) * this.paginationConfig.pageSize;
+                    const endIndex = startIndex + this.paginationConfig.pageSize;
+
+                    let filtered_Projects = this.prjtableData.filter(project => {
+                            const nameMatch = project.名称.includes(this.nameFilter);  // 名称包含查询条件
+                            const systemMatch = project.系统.includes(this.systemFilter);  // 系统包含查询条件
+                            return nameMatch && systemMatch;
                         });
-                    });
+                    this.filteredProjects = filtered_Projects.slice(startIndex, endIndex);
+                    this.paginationConfig.total = filtered_Projects.length;
+                },
+                getList() {
+                    axios.get("http://" + this.host + ":5009/getProjectList")
+                        .then(response => {
+                            this.prjtableData = response.data;
+                            this.currentPage = 1;
+                            //this.filteredProjects = this.prjtableData;
+                            this.filteredProjects = this.prjtableData.slice(0, this.paginationConfig.pageSize);
+                            this.paginationConfig.total = this.prjtableData.length;
+                            console.log('size of project data: ' + this.paginationConfig.total + ", filtered data: " + this.filteredProjects.length +
+                                ', page size: ' + this.paginationConfig.pageSize)
+                            this.dialogVisible = true;
+                            this.nameFilter = '';
+                            this.systemFilter = '';
+                            
+                        })
+                        .catch(error => {
+                            console.error("获取列表失败：", error);
+                            this.$message({ // 显示提示信息
+                                message: '获取列表失败',
+                                type: 'error',
+                                duration: 2000, // 设置为0则不会自动关闭
+                                //showClose: true // 显示关闭按钮
+                            });
+                        });
                 },
                 showHistoryData(selectedIndex) {
                     // 根据选中的历史问题索引，显示对应的答案
@@ -168,6 +220,20 @@
                         console.error('Error:', error);
                     });
                     },
+                    filterProjects() {
+                        this.filteredProjects = this.prjtableData.filter(project => {
+                            const nameMatch = project.名称.includes(this.nameFilter);  // 名称包含查询条件
+                            const systemMatch = project.系统.includes(this.systemFilter);  // 系统包含查询条件
+                            return nameMatch && systemMatch;
+                        });
+                        this.currentPage = 1;
+                        this.paginationConfig.total = this.filterProjects.length;
+
+                        // Update the displayed projects based on the current page
+                        const startIndex = (this.currentPage - 1) * this.paginationConfig.pageSize;
+                        const endIndex = startIndex + this.paginationConfig.pageSize;
+                        this.filteredProjects = this.filteredProjects.slice(startIndex, endIndex);                        
+                    },
                 /* fetchOptions() {
                 // 从Flask服务器获取选项
                     axios.get("http://" + this.host + ":5003/options")
@@ -189,6 +255,7 @@
                     }
                 },
                 submitQuestion() {
+                    this.username = sessionStorage.getItem('userName');
                     let loadingMessage = this.$message({ // 显示提示信息
                         message: '正在提交，请稍等...',
                         type: 'info',
@@ -200,7 +267,7 @@
                         headers: {
                             'Content-Type': 'application/json; charset=utf-8'
                         },
-                        body: JSON.stringify({ question: this.question, count:this.questionCount, bp:this.bpflag, threshold:this.similarityThreshold})
+                        body: JSON.stringify({ question: this.question, count:this.questionCount, bp:this.bpflag, threshold:this.similarityThreshold, username: this.username})
                     })
                         .then(response => {
                             if (!response.ok) {

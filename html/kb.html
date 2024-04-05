@@ -69,7 +69,7 @@
             <!-- 在这里添加更多的使用说明 -->
         </div>
         <span slot="footer" class="dialog-footer">
-            <p>Last update: 2024-3-30 19:30</p>
+            <p>Last update: 2024-4-4 21:44</p>
             <el-button @click="showInstructions = false">我知道了</el-button>
         </span>
     </el-dialog> 
@@ -180,7 +180,8 @@
                 limit_tp: 20,
                 similarityThreshold: 0.7,
                 imageUrls: [],
-                currentContent_adjust:''        
+                currentContent_adjust:'',
+                username:''        
             },
             methods: {    
                 extractImageUrls() {
@@ -190,6 +191,7 @@
                     console.log(this.imageUrls)                    
                 },            
                 submitQuestion() {
+                    this.username = sessionStorage.getItem('userName');
                     if (this.question.length < 5) {
                         this.$message({
                             message: '问题长度太短，至少5个字符',
@@ -221,7 +223,7 @@
                         headers: {
                             'Content-Type': 'application/json; charset=utf-8'
                         },
-                        body: JSON.stringify({ question: this.question, limit_sum:this.limit_sum, limit_tp:this.limit_tp, threshold:this.similarityThreshold})
+                        body: JSON.stringify({ question: this.question, limit_sum:this.limit_sum, limit_tp:this.limit_tp, threshold:this.similarityThreshold, username: this.username})
                     })
                         .then(response => {
                             if (!response.ok) {

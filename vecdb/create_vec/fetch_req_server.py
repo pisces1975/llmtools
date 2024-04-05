@@ -174,7 +174,7 @@ def update_story_status(ids, status):
     # 提交事务
     local_session.commit()
 
-result_query  = local_session.query(Project.workspace_id).filter(Project.modify_time < '2024-3-15')
+result_query  = local_session.query(Project.workspace_id).filter(Project.modify_time > '2024-4-2')
 project_list = result_query.all()
 mylogger.debug(f"{len(project_list)} projects to analyze, {project_list[0][0]} ... {project_list[-1][0]}")
 

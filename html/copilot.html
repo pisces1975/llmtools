@@ -136,7 +136,7 @@
         <!-- 在这里添加更多的使用说明 -->
     </div>
     <span slot="footer" class="dialog-footer">
-        <p>Last update: 2024-3-30 19:00</p>
+        <p>Last update: 2024-4-4 21:44</p>
         <el-button @click="showInstructions = false">我知道了</el-button>
     </span>
 </el-dialog>
@@ -223,7 +223,8 @@ new Vue({
       disable_flag: false,
       communicationHistories: [],
       initialLanguage: 'java',
-      dialogVisible: false
+      dialogVisible: false,
+      username:''
     };
   },
   methods: {
@@ -292,6 +293,7 @@ new Vue({
       this.disable_flag = true    
       this.countdown = 60
       this.codeReview = '提交代码段给大模型，等待反馈中。。。' + this.countdown + 's'
+      this.username = sessionStorage.getItem('userName');
       console.log('提交代码', this.sourceCode, this.selectedTask, this.selectedModel);
       let timer = setInterval(() => {
         this.countdown -= 1
@@ -311,7 +313,8 @@ new Vue({
       axios.post('http://' + this.host +':5009/ccpilot', {
         tasks: this.selectedTask,
         models: this.selectedModel,
-        sourceCode: this.sourceCode
+        sourceCode: this.sourceCode,
+        username: this.username
       }, {
         headers: {
           'Content-Type': 'application/json',

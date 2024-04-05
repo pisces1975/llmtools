@@ -142,8 +142,8 @@ class SearchKB:
         threshold = request.json['threshold']
 
         LOG.debug(f"get question: {question}, limit_sum-{limit_sum}, limit_tp-{limit_tp}, threshold-{threshold}")  
-        #matches, id_list = self.query(question, limit_sum, limit_tp, threshold)
-        matches, id_list = self.query_test(question, limit_sum, limit_tp, threshold)
+        matches, id_list = self.query(question, limit_sum, limit_tp, threshold)
+        #matches, id_list = self.query_test(question, limit_sum, limit_tp, threshold)
         
         results = []
         #matches = create_debug_result()

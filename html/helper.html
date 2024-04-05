@@ -66,7 +66,7 @@
             <!-- 在这里添加更多的使用说明 -->
         </div>
         <span slot="footer" class="dialog-footer">
-            <p>Last update: 2024-3-29 17:00</p>
+            <p>Last update: 2024-4-4 21:44</p>
             <el-button @click="showInstructions = false">我知道了</el-button>
         </span>
     </el-dialog>
@@ -180,10 +180,12 @@
                 currentDistance: '',
                 selectedAssistant:'',
                 dialogKey: 0,
-                similarityThreshold:0.7       
+                similarityThreshold:0.7,
+                username:''     
             },
             methods: {                
                 submitQuestion() {
+                    this.username = sessionStorage.getItem('userName');
                     if (this.question.length < 5) {
                         this.$message({
                             message: '问题长度太短，至少5个字符',
@@ -203,7 +205,7 @@
                         headers: {
                             'Content-Type': 'application/json; charset=utf-8'
                         },
-                        body: JSON.stringify({ question: this.question, count:this.questionCount, module:this.selectedModule, threshold:this.similarityThreshold})
+                        body: JSON.stringify({ question: this.question, count:this.questionCount, module:this.selectedModule, threshold:this.similarityThreshold, username: this.username})
                     })
                         .then(response => {
                             if (!response.ok) {
