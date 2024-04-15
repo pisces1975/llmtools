@@ -30,7 +30,18 @@
                 <el-option label="N20核算" value="N20核算"></el-option>
                 <el-option label="N20结算" value="N20结算"></el-option>
                 <el-option label="N20核心" value="N20核心"></el-option>
+                <el-option label="N20票据网关前置" value="N20票据网关前置"></el-option>
+                <el-option label="N20票据综合管理" value="N20票据综合管理"></el-option>
+                <el-option label="N20票据网关" value="N20票据网关"></el-option>
+                <el-option label="N20票据库存" value="N20票据库存"></el-option>
+                <el-option label="N20同业票据" value="N20同业票据"></el-option>
+                <el-option label="N20企业票据" value="N20企业票据"></el-option>
+                <el-option label="N20票据网银" value="N20票据网银"></el-option>
 				<el-option label="金云2.0收付款" value="金云2.0收付款"></el-option>
+                <el-option label="金云2.0账户" value="金云2.0账户"></el-option>
+                <el-option label="金云2.0公共" value="金云2.0公共"></el-option>
+                <el-option label="金云2.0ERP接口" value="金云2.0接口"></el-option>
+                <el-option label="金云2.0新票据" value="金云2.0新票据"></el-option>
             </el-select>
         </el-form-item>
         <el-form-item>
@@ -61,12 +72,12 @@
             <p>6. “注释”是通过大模型产生的，在代码源文件中没有。</p>
             <p>7. “序号”是链接，点击可以打开在Git上保存的源码（前提是你有码云仓库权限）。</p>
             <p>8. “请选择历史问题”保存本session问题和答案历史，选择下拉框中的问题会直接加载答案列表。</p>            
-			<p>9. 2024-3-22，搜索范围覆盖N20结算，N20核心，N20核算，金云2.0收付款 4个模块的重点类，共~1050个类，~7800个方法，代码来自24-3-4，码云master分支。</p> 
+			<p>9. 2024-4-15，搜索范围覆盖N20结算、核心、核算、票据、金云2.0收付款、账户、票据、功能等模块的重点类，共~7400个类，~27500个方法，代码来自24-3-4，码云master分支。</p> 
             <p>10. 点击“跳转”可以在几个助手功能之间跳转。</p>            
             <!-- 在这里添加更多的使用说明 -->
         </div>
         <span slot="footer" class="dialog-footer">
-            <p>Last update: 2024-4-4 21:44</p>
+            <p>Last update: 2024-4-15 19:20</p>
             <el-button @click="showInstructions = false">我知道了</el-button>
         </span>
     </el-dialog>

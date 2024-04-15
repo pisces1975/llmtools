@@ -21,7 +21,20 @@ LOG = logger.Logger(name=logger.SEARCHALL_LOG_FILE_NAME, debug=True).logger
 module_name_mapping = {'N20核算':'atg-accounting',
                         "N20核心":'fcs-coresvc',
                         "N20结算":'stm-settlement',
-                        "金云2.0收付款":'jy2-pay_service'}
+                        'N20票据网关前置': 'mrt-whp03-bill-gateway-front',
+                        'N20票据综合管理': 'mrt-whp03-bill-manager',
+                        'N20票据网关': 'mrt-whp03-bill-gateway',
+                        'N20票据库存': 'mrt-whp03-bill-stock',
+                        'N20同业票据': 'mrt-whp03-bill-interbank',
+                        'N20企业票据': 'mrt-whp03-bill-business',
+                        'N20票据网银': 'mrt-whp03-bill-ebank',
+                        "金云2.0收付款":'jy2-pay_service',
+                        '金云2.0账户': 'jy2-cb_service',
+                        '金云2.0公共': 'jy2-common',
+                        '金云2.0ERP接口': 'jy2-payservice_service',
+                        '金云2.0新票据-公共': 'jy2-nggds_service',
+                        '金云2.0新票据': 'jy2-ngecd_service'}
+
 
 class SearchCodebase:
     def __init__(self) -> None:     
