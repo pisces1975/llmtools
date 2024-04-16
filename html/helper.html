@@ -26,22 +26,8 @@
             <el-checkbox v-model="bpflag">查询BP需求</el-checkbox>
         </el-form-item> -->
         <el-form-item>
-            <el-select v-model="selectedModule" placeholder="请选择模块">
-                <el-option label="N20核算" value="N20核算"></el-option>
-                <el-option label="N20结算" value="N20结算"></el-option>
-                <el-option label="N20核心" value="N20核心"></el-option>
-                <el-option label="N20票据网关前置" value="N20票据网关前置"></el-option>
-                <el-option label="N20票据综合管理" value="N20票据综合管理"></el-option>
-                <el-option label="N20票据网关" value="N20票据网关"></el-option>
-                <el-option label="N20票据库存" value="N20票据库存"></el-option>
-                <el-option label="N20同业票据" value="N20同业票据"></el-option>
-                <el-option label="N20企业票据" value="N20企业票据"></el-option>
-                <el-option label="N20票据网银" value="N20票据网银"></el-option>
-				<el-option label="金云2.0收付款" value="金云2.0收付款"></el-option>
-                <el-option label="金云2.0账户" value="金云2.0账户"></el-option>
-                <el-option label="金云2.0公共" value="金云2.0公共"></el-option>
-                <el-option label="金云2.0ERP接口" value="金云2.0接口"></el-option>
-                <el-option label="金云2.0新票据" value="金云2.0新票据"></el-option>
+            <el-select id="moduleSelect1" v-model="selectedModule" placeholder="请选择模块" multiple >
+                <el-option v-for="option in options" :key="option.value" :label="option.label" :value="option.value"></el-option>
             </el-select>
         </el-form-item>
         <el-form-item>
@@ -77,14 +63,14 @@
             <!-- 在这里添加更多的使用说明 -->
         </div>
         <span slot="footer" class="dialog-footer">
-            <p>Last update: 2024-4-15 19:20</p>
+            <p>Last update: 2024-4-16 14:00</p>
             <el-button @click="showInstructions = false">我知道了</el-button>
         </span>
     </el-dialog>
     
     <el-dialog title="详细信息" :visible.sync="codeDialogVisible" :key="dialogKey" width="60%" :before-close="handleClose">
         <div>
-            <p><strong>({{currentID}}) </strong> <strong>相似度</strong> <sup>越小越好</sup>{{currentDistance}}, <strong>Package</strong> {{ currentPackage }}</p>
+            <p><strong>({{currentID}}) </strong> <strong>相似度</strong> <sup>越小越好</sup>{{currentDistance}}, <strong>Package</strong> {{currentModule}}.{{ currentPackage }}</p>
             <p><strong>Method:</strong> <a :href="currentURL" target="_blank">{{ currentMethod }}</a></p>
         </div>
         <pre><code class="language-java">{{ codeDialogContent }}</code></pre>
@@ -97,6 +83,7 @@
             </template>
         </el-table-column>
         <el-table-column prop="Package" label="Package" width="150px"></el-table-column>
+        <el-table-column prop="Module" label="模块" width="80px"></el-table-column>
         <el-table-column prop="Method" label="类名和方法名" width="150px">
             <template slot-scope="scope">
                 <span v-if="scope.row.Type === 'class'">
@@ -165,7 +152,7 @@
     <script src="https://cdn.jsdelivr.net/npm/element-ui@2.15.6/lib/index.js"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <script src="https://fastly.jsdelivr.net/npm/prismjs/prism.js"></script>
-    <script src="./host.js"></script>
+    <script src="./host.js"></script>    
     <script> 
         //import {host_ip, login_host_ip} from './host.js';       
         new Vue({
@@ -178,7 +165,7 @@
                 full_options: [],  // 可以从后台服务获取的选项                
                 host: host_ip,
                 login_host: login_host_ip,
-                selectedModule: 'N20结算',
+                selectedModule: ['N20结算'],
                 historyData: [], // 存储历史问题和答案   
                 isLoading: false, 
                 codeDialogVisible: false,
@@ -192,7 +179,9 @@
                 selectedAssistant:'',
                 dialogKey: 0,
                 similarityThreshold:0.7,
-                username:''     
+                username:'' ,
+                options:[] ,
+                currentModule:''   
             },
             methods: {                
                 submitQuestion() {
@@ -324,6 +313,7 @@
                     this.currentMethod = row.Method;
                     this.currentURL = row.URL;
                     this.currentID = row.ID;
+                    this.currentModule = row.Module;
                     console.log(row)
                     this.codeDialogVisible = true;
                     this.dialogKey++; // 增加key的值来强制重新渲染
@@ -338,6 +328,17 @@
                 },                              
             },
             mounted() {
+                // 使用Ajax或Fetch等方法从后台获取选项数据
+                fetch('http://' + this.host + ':5009/getModuleList')
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data)
+                    this.options = data                    
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+
                 this.checkLogin(); // 页面加载完成后立即检查登录状态
             },
             created() {

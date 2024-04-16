@@ -52,6 +52,12 @@ def searchCode():
     LOG.debug(f'Invoke: search_code, {question} {limit} {module}')
     return jsonify(code_retriever.search_codebase(request))
 
+@app.route('/getModuleList', methods=['GET'])
+def getModuleList():
+    code_retriever.create_log('', "CODE", 'get module list')
+    LOG.debug(f"Invoke: getModuleList")
+    return jsonify(code_retriever.getModuleList())
+
 @app.route('/ccpilot', methods=['POST'])
 def codinghelper():
     task = request.json['tasks']

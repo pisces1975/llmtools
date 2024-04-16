@@ -32,7 +32,7 @@ module_name_mapping = {'N20核算':'atg-accounting',
                         '金云2.0账户': 'jy2-cb_service',
                         '金云2.0公共': 'jy2-common',
                         '金云2.0ERP接口': 'jy2-payservice_service',
-                        '金云2.0新票据-公共': 'jy2-nggds_service',
+                        #'金云2.0新票据-公共': 'jy2-nggds_service',
                         '金云2.0新票据': 'jy2-ngecd_service'}
 
 
@@ -46,15 +46,19 @@ class SearchCodebase:
         if not errflg:
             raise Exception("An error occurred: " + errmsg)
 
+    def getModuleList(self):
+        results = []
+        for module in list(module_name_mapping.keys()):
+            results.append({'label':module, 'value':module})
+        return results
+        
     def create_log(self, username, type, question):
         query = 'INSERT INTO qlog (username, type, question) VALUES (%s,%s,%s)'
         self.db.execute_query(query, (username, type, question))
         
-    def query(self, question, limit, module, threshold):
+    def query(self, question, limit, module_list, threshold):
         LOG.debug("Start to create embedding of question ...")
-        query_vec = create_embedding_bge(question)
-        git_path = f"https://e.gitee.com/nstc/repos/nstc/{module_name_mapping[module]}/blob/master/"    
-        local_path = f"E:/repo/{module_name_mapping[module]}//"
+        query_vec = create_embedding_bge(question)       
 
         id_list = []
         LOG.debug("Start to search FAISS db ...")
@@ -68,30 +72,36 @@ class SearchCodebase:
             if float(distance) > threshold:
                 LOG.debug(f'{i} Distance is beyond threshold, break, {distance} > {threshold}')
                 break             
-            query = "SELECT package, class, method, com_all, content, file_path, class_type FROM method_info WHERE vector_id=%s and module=%s"
-            self.db.execute_query(query, (int(index),module))
+            
+            #query = "SELECT package, class, method, com_all, content, file_path, class_type, module FROM method_info WHERE vector_id=%s and module in (%s)"
+            query = "SELECT package, class, method, com_all, content, file_path, class_type, module FROM method_info WHERE vector_id=%s"
+            self.db.execute_query(query, (int(index),))
             record = self.db.fetchone()
 
-            if record:
-                package,class_name,method, com_all, content, file_path, class_type= record
-                res = {
-                    'Package': f'[{distance:.8f}] {package}',
-                    'Method':f"{class_name}.{method}",
-                    'Comment':com_all,
-                    'Content':content,
-                    'URL':file_path.replace(local_path, git_path),
-                    'Distance':distance,
-                    'Type': class_type
-                }
-                debug_str = com_all.replace('\n', '...')
-                LOG.debug(f"Result {res_count}> Distance:{distance}, {package}.{class_name}.{method}, [{debug_str[:30]}]")      
-                res_count += 1         
-                
-                results.append(res)
-                id_list.append(index)
+            if record:                
+                package,class_name,method, com_all, content, file_path, class_type, module = record
+                if module in module_list:
+                    git_path = f"https://e.gitee.com/nstc/repos/nstc/{module_name_mapping[module]}/blob/master/"    
+                    local_path = f"E:/repo/{module_name_mapping[module]}//"
+                    res = {
+                        'Package': f'[{distance:.8f}] {package}',
+                        'Method':f"{class_name}.{method}",
+                        'Comment':com_all,
+                        'Content':content,
+                        'URL':file_path.replace(local_path, git_path),
+                        'Distance':distance,
+                        'Type': class_type,
+                        'Module': module
+                    }
+                    debug_str = com_all.replace('\n', '...')
+                    LOG.debug(f"Result {res_count}> Distance:{distance}, {module}.{package}.{class_name}.{method}, [{debug_str[:30]}]")      
+                    res_count += 1         
+                    
+                    results.append(res)
+                    id_list.append(index)
 
-                if res_count >= limit/AMP_NUM:
-                    break
+                    if res_count >= limit/AMP_NUM:
+                        break
 
         return results, id_list
 
@@ -135,7 +145,8 @@ class SearchCodebase:
                 #'URL' : match.url
                 'URL' : match['URL'],
                 'Distance': float(match['Distance']),
-                'Type': match['Type']
+                'Type': match['Type'],
+                'Module': match['Module']
             }       
 
             results.append(res)
