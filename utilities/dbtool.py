@@ -3,6 +3,7 @@ import mysql.connector
 # from loguru import logger
 import os
 import logging
+import json
 from logging.handlers import TimedRotatingFileHandler
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -43,9 +44,14 @@ class Logger:
 #         self.logger = logger
 
 class DBHandler:
-    def __init__(self, dbname) -> None:        
+    def __init__(self, dbname) -> None:     
+        with open('config.json', 'r') as config_file:
+            config = json.load(config_file)
+
+        host = config['host']   
+        
         mysql_db_config = {
-            "host": '10.101.9.50',
+            "host": host,
             "user": 'root',
             "password": 'newpass',
             "database": dbname

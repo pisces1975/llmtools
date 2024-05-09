@@ -7,8 +7,12 @@ from xinference.client import Client
 import mysql.connector
 import json
 from utilities.dbtool import DBHandler
-
-
+import numpy as np
+from pydantic import BaseModel
+from typing import List
+from scipy.interpolate import interp1d
+from sklearn.preprocessing import PolynomialFeatures
+#from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 #app = Flask(__name__)
 mylogger = logger.Logger(name='llmtool', debug=True).logger  
 app = Flask(__name__)  
@@ -54,6 +58,12 @@ def create_embedding_bge(sentence):
     # LOG.debug(f"length of embedding {len(embedding)}, {embedding[:5]}")
     return embedding
 
+def create_embedding_bge_np(sentence):
+    result = model.create_embedding(sentence)
+    embedding = result['data'][0]['embedding']
+    # LOG.debug(f"length of embedding {len(embedding)}, {embedding[:5]}")
+    return np.array(embedding)
+
 def checkUser(username, password):
     query = "SELECT * FROM user_info WHERE username=%s and mypwd=%s"
     db_handler.execute_query(query,(username, password))
@@ -62,6 +72,89 @@ def checkUser(username, password):
         return True
     else:
         return False
+
+class EmbeddingRequest(BaseModel):
+    input: 'List[str]|str'
+    model: str
+
+class EmbeddingResponse(BaseModel):
+    data: list
+    model: str
+    object: str
+    usage: dict
+# 插值法
+def interpolate_vector(vector, target_length):
+    original_indices = np.arange(len(vector))
+    target_indices = np.linspace(0, len(vector)-1, target_length)
+    f = interp1d(original_indices, vector, kind='linear')
+    return f(target_indices)
+
+def expand_features(embedding, target_length):
+    poly = PolynomialFeatures(degree=2)
+    expanded_embedding = poly.fit_transform(embedding.reshape(1, -1))
+    expanded_embedding = expanded_embedding.flatten()
+    if len(expanded_embedding) > target_length:
+        # 如果扩展后的特征超过目标长度，可以通过截断或其他方法来减少维度
+        expanded_embedding = expanded_embedding[:target_length]
+    elif len(expanded_embedding) < target_length:
+        # 如果扩展后的特征少于目标长度，可以通过填充或其他方法来增加维度
+        expanded_embedding = np.pad(expanded_embedding, (0, target_length - len(expanded_embedding)))
+    return expanded_embedding
+
+#@app.post("/v1/embeddings", response_model=EmbeddingResponse)
+#async def get_embeddings(request: EmbeddingRequest, credentials: HTTPAuthorizationCredentials = None):   
+#@app.post("/v1/embeddings")
+@app.route('/v1/embeddings', methods=['POST']) 
+def get_embeddings():   
+    
+    # 计算嵌入向量和tokens数量
+    #print(request.input)
+    # if type(request.input) == 'str':
+    #     request.input = [request.input] 
+    #print(request)
+    em_input = request.json.get('input')
+    if isinstance(em_input, str):
+        em_input_list = [em_input]
+    else:
+        em_input_list = em_input
+    mylogger.debug(f"Get {len(em_input_list)} embedding requests")
+    #embeddings = [model.encode(text) for text in request.input]
+    #embeddings = [create_embedding_bge(text) for text in request.input]
+    embeddings = [create_embedding_bge_np(text) for text in em_input_list]
+
+    # 如果嵌入向量的维度不为1536，则使用插值法扩展至1536维度 
+    # embeddings = [interpolate_vector(embedding, 1536) if len(embedding) < 1536 else embedding for embedding in embeddings]
+    # 如果嵌入向量的维度不为1536，则使用特征扩展法扩展至1536维度 
+    embeddings = [expand_features(embedding, 1536) if len(embedding) < 1536 else embedding for embedding in embeddings]
+
+    # Min-Max normalization
+    # embeddings = [(embedding - np.min(embedding)) / (np.max(embedding) - np.min(embedding)) if np.max(embedding) != np.min(embedding) else embedding for embedding in embeddings]
+    embeddings = [embedding / np.linalg.norm(embedding) for embedding in embeddings]
+    # 将numpy数组转换为列表
+    embeddings = [embedding.tolist() for embedding in embeddings]
+    #prompt_tokens = sum(len(text.split()) for text in request.input)
+    prompt_tokens = sum(len(text.split()) for text in em_input_list)
+    total_tokens = 0
+    
+    response = {
+        "data": [
+            {
+                "embedding": embedding,
+                "index": index,
+                "object": "embedding"
+            } for index, embedding in enumerate(embeddings)
+        ],
+        #"model": request.model,
+        "model": "",
+        "object": "list",
+        "usage": {
+            "prompt_tokens": prompt_tokens,
+            "total_tokens": total_tokens,
+        }
+    }
+
+    mylogger.debug(f"return {len(embeddings)} embeddings")
+    return response
 
 @app.route('/register', methods=['POST'])    
 def register():
@@ -182,6 +275,9 @@ if __name__ == '__main__':
         config = json.load(config_file)
 
     host = config['host']
+    #print('Start flask  ')
     app.run(debug=False, host=host, port=5111)
+    #app.run(debug=True, host='127.0.0.1', port=5201)
+
 
 # 在实际应用中，还需实现logout等接口，清除对应session_key的数据，并且考虑session过期等问题

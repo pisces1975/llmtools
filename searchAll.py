@@ -54,7 +54,7 @@ def searchCode():
 
 @app.route('/getModuleList', methods=['GET'])
 def getModuleList():
-    code_retriever.create_log('', "CODE", 'get module list')
+    #code_retriever.create_log('', "CODE", 'get module list')
     LOG.debug(f"Invoke: getModuleList")
     return jsonify(code_retriever.getModuleList())
 
