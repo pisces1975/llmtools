@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>需求助手</title>
+    <title>测试用例助手</title>
     <!-- 引入Element UI样式 -->
     <!-- Tomcat: 'C:\Program Files\Apache Software Foundation\Tomcat 9.0\webapps\robot' -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.6/lib/theme-chalk/index.css">
@@ -20,9 +20,13 @@
         <el-form-item label="相关度">
             <el-input-number v-model="similarityThreshold" :min="0.0" :max="1.5" :step="0.1" label="相关度" style="width: 140px;"></el-input-number>
         </el-form-item>
-        <el-form-item label="">
+        <el-form-item label="系统">
+            <el-input v-model="systemFilterTC" placeholder="输入系统进行过滤" style="margin-right: 10px;"></el-input>
+        </el-form-item>        
+        <!--<el-form-item label="">
             <el-checkbox v-model="bpflag">查BP</el-checkbox>
-        </el-form-item>
+        </el-form-item> -->
+
         <el-form-item>
           <el-button type="primary" @click="submitQuestion">查询</el-button>
         </el-form-item>
@@ -42,11 +46,12 @@
       <el-dialog title="使用说明" :visible.sync="showInstructions" width="50%">
         <div>
             <p>1. 使用自然语言描述问题，越详细越好。</p>
-            <p>2. 查询银企平台的需求时，要勾选“查BP”。</p>
-            <p>3. 点击“项目列表”，展示目前需求库覆盖的TAPD项目，“序号”是链接，点击可以打开在相关TAPD项目，更新时间指TAPD需求导入需求库的时间。</p>
+            <p>2. 查询特定系统的测试用例时，填写系统，模糊搜索。</p>
+            <p>3. 点击“项目列表”，展示目前测试用例库覆盖的TAPD项目，“序号”是链接，点击可以打开在相关TAPD项目，更新时间指TAPD测试用例导入用例库的时间。</p>
             <p>4. 点击“跳转”可以在几个助手功能之间跳转。</p> 
             <p>5. 相关度限制可以通过“相关度”控件进行调整，相似度数值越小，问题和答案之间的相关程度越<strong style="color:red">大</strong>，相关度限制值设置的越小，搜索到的结果可能就越少</p>            
             <p>6. “请选择历史问题”保存本session问题和答案历史，选择下拉框中的问题会直接加载答案列表。</p>
+            <p>7. 点击“内容”区域，会弹出窗口显示用例详情</p>
             <!-- 
             <p>4. 受后台逻辑限制，不一定每次都能返回“答案数量”个答案。</p>
             <p>5. 点击“方法体”内容，可以在弹窗中看到完整的代码。</p>
@@ -56,9 +61,23 @@
             <!-- 在这里添加更多的使用说明 -->
         </div>
         <span slot="footer" class="dialog-footer">
-            <p>Last update: 2024-4-4 21:44</p>
+            <p>Last update: 2024-5-9 21:44</p>
             <el-button @click="showInstructions = false">我知道了</el-button>
         </span>
+    </el-dialog>
+
+    <el-dialog title="详细信息" :visible.sync="codeDialogVisible" :key="dialogKey" width="60%" :before-close="handleClose">
+        <div>
+            <p><strong>({{currentID}}) </strong> <strong>相似度</strong> <sup>越小越好</sup>{{currentDistance}}</p>
+            <p><strong>名称</strong> <a :href="currentURL" target="_blank">{{ currentName }}</a></p>
+            <p><strong>前置条件</strong></p>   
+            <div class="border-box" v-html="currentPrecondition"></div>    
+            <p><strong>用例步骤</strong></p>                
+            <div class="border-box" v-html="currentSteps"></div>
+            <p><strong>期望结果</strong></p>                
+            <div class="border-box" v-html="currentExpectation"></div>
+        </div>
+        
     </el-dialog>
 
       <el-dialog title="项目列表" :visible.sync="dialogVisible" :width="dialogWidth">
@@ -90,15 +109,23 @@
       </el-dialog>
 
     <el-table :data="tableData" style="width: 95%">
-        <el-table-column prop="序号" label="序号" width="50">
+        <el-table-column prop="id" label="序号" width="50">
             <template slot-scope="scope">
-                <a :href="scope.row.URL" target="_blank">{{ scope.row.序号 }}</a>
+                <a :href="scope.row.URL" target="_blank">{{ scope.row.id }}</a>
             </template>
         </el-table-column>
-        <el-table-column prop="项目" label="项目" width="150"></el-table-column>
-        <el-table-column prop="需求顾问" label="需求顾问" width="100"></el-table-column>
-        <el-table-column prop="标题" label="标题" width="300"></el-table-column>
-        <el-table-column prop="内容" label="内容"></el-table-column>
+        <el-table-column prop="project" label="项目" width="100"></el-table-column>
+        <el-table-column prop="category" label="目录" width="100"></el-table-column>
+        <!--<el-table-column prop="需求顾问" label="需求顾问" width="100"></el-table-column>
+        <el-table-column prop="标题" label="标题" width="300"></el-table-column> -->
+        <!-- <el-table-column prop="content" label="内容" @click="openCodeDialog(scope.row)"></el-table-column> -->
+        <el-table-column prop="content" label="内容">
+            <template slot-scope="scope">
+                <!-- <el-input type="textarea" v-model="scope.row.Content" :rows="6" style="width: 100%; resize: both;"></el-input> -->
+                <!-- <pre class="code-container" @click="openCodeDialog(scope.row.Content, scope.row.Package, socpe.row.Method, scope.row.URL)"><code class="language-java">{{ scope.row.Content }}</code></pre> -->
+                <div class="code-container" @click="openCodeDialog(scope.row)">{{ scope.row.content }}</div>
+            </template>
+        </el-table-column>
     </el-table>
   </div>
 
@@ -107,6 +134,20 @@
     <script src="https://cdn.jsdelivr.net/npm/element-ui@2.15.6/lib/index.js"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <script src="./host.js"></script>
+    <style>
+        /* .el-table .cell {
+            white-space: pre-line;
+        } */
+        div.border-box {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 10px;
+        }
+        pre.code-container {
+            white-space: pre-line;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+    </style>
     <script> 
         //import {host_ip, login_host_ip} from './host.js';       
         new Vue({
@@ -138,7 +179,18 @@
                     layout: 'total, sizes, prev, pager, next, jumper',
                     total: 0 // 总记录数，需要根据实际情况进行设置
                 },
-                username:''
+                username:'',
+                systemFilterTC:'',
+                codeDialogVisible: false,
+                codeDialogContent: '',
+                currentID: 0,
+                currentDistance: 0.0,
+                currentURL: '',
+                currentName: '',
+                currentPrecondition: '',
+                currentSteps: '',
+                currentExpectation: '',
+                dialogKey: 0
             },
             watch: {
                 currentPage(newPage) {
@@ -163,7 +215,7 @@
                     this.paginationConfig.total = filtered_Projects.length;
                 },
                 getList() {
-                    axios.get("http://" + this.host + ":5009/getProjectList")
+                    axios.get("http://" + this.host + ":5009/getProjectList_tc")
                         .then(response => {
                             this.prjtableData = response.data;
                             this.currentPage = 1;
@@ -265,12 +317,14 @@
                         duration: 0, // 设置为0则不会自动关闭
                         showClose: true // 显示关闭按钮
                     });
-                    fetch('http://' + this.host + ':5009/searchReq', {
+                    fetch('http://' + this.host + ':5009/searchTC', {
                       method: 'POST',
                         headers: {
                             'Content-Type': 'application/json; charset=utf-8'
                         },
-                        body: JSON.stringify({ question: this.question, count:this.questionCount, bp:this.bpflag, threshold:this.similarityThreshold, username: this.username})
+                        body: JSON.stringify({ question: this.question, count:this.questionCount, 
+                                                project:this.systemFilterTC, threshold:this.similarityThreshold, 
+                                                username: this.username})
                     })
                         .then(response => {
                             if (!response.ok) {
@@ -314,7 +368,46 @@
                 handleChange(newValue) {
                     // 数字输入框值改变时的处理函数
                     console.log('问题数量改变为：', newValue);
-                }                               
+                },
+                handleClose(done) {
+                    this.codeDialogVisible = false;
+                    this.codeDialogContent = '';
+                    this.currentID = 0;                    
+                    this.currentDistance = 0.0;
+                    this.currentURL = '';
+                    this.currentName = '';
+                    this.currentPrecondition = '';
+                    this.currentSteps = '';
+                    this.currentExpectation = '';
+                    done();
+                },
+                openCodeDialog(row) {
+                    this.codeDialogContent = row.Content;
+                    //this.currentPackage = row.Package;
+                    // let curPack = row.Package;
+                    // let match = curPack.match(/\[(.*?)\]/);
+                    // let number = match ? match[1] : ''; // 获取匹配到的数字部分
+                    this.currentID = row.id;                    
+                    this.currentDistance = row.distance;
+                    this.currentURL = row.URL;
+                    this.currentName = row.name;
+                    this.currentPrecondition = row.precondition;
+                    this.currentSteps = row.steps;
+                    this.currentExpectation = row.expectation;
+
+                    // this.currentPackage = curPack.split(' ').slice(1).join(' '); // 使用空格分割字符串，取第二部分之后的内容作为包名
+                    // this.currentMethod = row.Method;
+                    // this.currentURL = row.URL;
+                    // this.currentID = row.ID;
+                    // this.currentModule = row.Module;
+                    console.log(row)
+                    this.codeDialogVisible = true;
+                    this.dialogKey++; // 增加key的值来强制重新渲染
+                    // this.$nextTick(() => {
+                    //     Prism.highlightAll();
+                    // });
+                },
+                
             },
             mounted() {
                 this.checkLogin(); // 页面加载完成后立即检查登录状态

@@ -47,6 +47,7 @@
         <el-option label="知识库助手" value="kb"></el-option>
         <el-option label="代码库助手" value="helper"></el-option>
         <el-option label="需求助手" value="req"></el-option>
+        <el-option label="测试用例助手" value="test"></el-option>
     </el-select>
     </el-col>
   </el-row>
@@ -353,6 +354,8 @@ new Vue({
             window.location.href = 'helper.html';
         } else if (this.selectedAssistant === 'req') {
             window.location.href = 'req.html';
+        } else if (this.selectedAssistant === 'test') {
+            window.location.href = 'testcase.html';
         }
     },
     highlightCode() {

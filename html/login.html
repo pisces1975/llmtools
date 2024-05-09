@@ -26,6 +26,7 @@
                         <el-radio label="business" title="用自然语言搜索TAPD项目需求，包括所有重点履约项目、产品项目和银企平台项目">需求助手</el-radio>                        
                         <el-radio label="code" title="用自然语言搜索代码库，包括N20 结算、核算、核心，票据、金云2.0 收付款、ERP接口、票据等模块">代码库助手</el-radio>
                         <el-radio label="coding" title="让大模型为代码段找问题、进行评价、提重构建议，支持GPT3.5、DeepSeek、文心一言4.0">编码助手</el-radio>
+                        <el-radio label="test" title="用自然语言搜索TAPD项目测试用例，包括典型的G20、T20、新一代票据、新一代信贷、新一代网银等项目">测试用例助手</el-radio>
                         <!-- <el-radio label="default">测试页面</el-radio> -->
                     </el-radio-group>
                 </el-form-item>
@@ -322,6 +323,9 @@
                                     break;
                                 case 'coding':
                                     window.location.href = 'copilot.html';
+                                    break;
+                                case 'test':
+                                    window.location.href = 'testcase.html'
                                     break;
                                 default:
                                     window.location.href = 'test.html';

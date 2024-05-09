@@ -3,6 +3,7 @@ from utilities import logger
 from searchCodebase import SearchCodebase
 from searchKnowledgebase import SearchKB
 from searchRequirement import SearchRequirement
+from searchTestcase import SearchTestcase
 from copilot import Copilot
 from flask_cors import CORS
 import json
@@ -16,11 +17,29 @@ code_retriever = SearchCodebase()
 kb_retriever = SearchKB()
 req_retriever = SearchRequirement()
 coding_helper = Copilot()
+tc_retriever = SearchTestcase()
 
 @app.route('/getProjectList', methods=['GET'])
 def get_project_list():
     LOG.debug('Invoke: get_project_list')
     return jsonify(req_retriever.get_project_list())
+
+@app.route('/getProjectList_tc', methods=['GET'])
+def get_project_list_TC():
+    LOG.debug('Invoke: get_project_list_tc')
+    return jsonify(tc_retriever.get_project_list())
+
+@app.route('/searchTC', methods=['POST'])
+def searchTestcase():
+    question = request.json['question']
+    limit = request.json['count']
+    #isBP = request.json['bp']
+    username = request.json['username']
+    threshold = request.json['threshold']
+    project = request.json['project']
+    code_retriever.create_log(username, "TC", f"{question} {limit} {project} {threshold}")
+    LOG.debug(f'Invoke: search_req, {question} {limit} {project} {threshold}')
+    return jsonify(tc_retriever.search_tc(request))
 
 @app.route('/searchReq', methods=['POST'])
 def searchRequirement():
@@ -28,7 +47,8 @@ def searchRequirement():
     limit = request.json['count']
     isBP = request.json['bp']
     username = request.json['username']
-    code_retriever.create_log(username, "REQ", f"{question} {limit} {isBP}")
+    threshold = request.json['threshold']
+    code_retriever.create_log(username, "REQ", f"{question} {limit} {isBP} {threshold}")
     LOG.debug(f'Invoke: search_req, {question} {limit} {isBP}')
     return jsonify(req_retriever.search_req(request))
 

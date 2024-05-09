@@ -48,7 +48,7 @@ class DBHandler:
         with open('config.json', 'r') as config_file:
             config = json.load(config_file)
 
-        host = config['host']   
+        host = config['db_host']   
         
         mysql_db_config = {
             "host": host,
